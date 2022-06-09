@@ -1,0 +1,258 @@
+// helper
+any_inline = {!NEWLINE ~ ANY}
+space = {" " | "\t"}
+EOL = {NEWLINE | EOI}
+
+Lines = { NEWLINE+ }
+
+// Syntax is follwing the documentation at github:
+// https://github.com/dfinity/motoko/blob/master/doc/modules/language-guide/pages/language-manual.adoc
+
+Motoko = {
+    SOI ~
+    (
+        Lines
+        | Comment
+    )*
+    ~ EOI
+}
+
+// comments
+Comment = { DocComment | LineComment | BlockComment }
+
+DocComment = { ("/// " ~ any_inline* ~ EOL)+ }
+
+LineComment = { "//"  ~ any_inline* ~ EOL }
+
+
+BlockComment = { 
+    "/*"
+    ~ ((!("*/" | "/*") ~ ANY) | BlockComment)* // allow nested comments
+    ~ "*/"
+}
+
+// copy & pasted from
+// https://github.com/dfinity/motoko/blob/master/doc/modules/language-guide/pages/language-manual.adoc#keywords=
+Keyword = {
+    "actor" | "and" | "assert" | "async" | "await" | "break" | "case" | "catch" | "class" | "continue" | "debug"
+    | "debug_show" | "do" | "else" | "flexible" | "false" | "for" | "from_candid" | "func" | "if" | "ignore" | "import"
+    | "in" | "module" | "not" | "null" | "object" | "or" | "label" | "let" | "loop" | "private" | "public" | "query" | "return"
+    | "shared" | "stable" | "switch" | "system" | "throw" | "to_candid" | "true" | "try" | "type" | "var" | "while"
+}
+
+Id = { ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
+
+Nat = { Num | "0x" ~ HexNum }
+Num = { ASCII_DIGIT ~ ( "_"? ~ ASCII_DIGIT )* }
+HexNum = { ASCII_HEX_DIGIT ~ ( "_"? ~ ASCII_HEX_DIGIT )* }
+Sign = { "-" }
+
+Frac = { Num }
+HexFrac = { HexNum }
+Float = {
+  Num ~ "." ~ Frac?
+  | Num ~ ("." ~ Frac?)? ~ ("e" | "E") ~ Sign? ~ Num
+  | HexNum ~ "." ~ HexFrac?
+  | "0x" ~ HexNum ~ ("." ~ HexFrac?)? ~ ("p" | "P") ~ Sign? ~ Num
+}
+
+Escape = { "n" | "r" | "t" | "\\" | "\'" | "\"" }
+
+
+Character = { 
+    "\\" ~ Escape
+    | "\\" ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT
+    | "\\{" ~ HexNum ~ "}"
+    | !("\\") ~ any_inline
+}
+
+Char = { "'" ~ (!"'" ~ Character) ~ "'" }
+Text = { "\"" ~ (!"\"" ~ Character)* ~ "\"" } // TODO: check "'" and '"' and ''' and """ in motoko
+
+Lit = { Nat | Float | Char | Text }
+
+// Operators
+
+UnOp = { "-" | "+" | "^" | "!" }
+RelOp = { "==" | "!=" | space ~ "<" ~ space | space ~ ">" ~ space | "<=" | ">=" } // 
+BinOp = { "+" | "-" | "*" | "/" | "%" | "**" }
+BitOp = { "&" | "|" | "^" | "<<" | space ~ ">>" | "<<>" | "<>>" | "+%" | "-%" | "*%" | "**%" }
+// TextOp is also called binop in motoko on github
+TextOp = { "#" }
+Assignment = {
+    ":=" | "+=" | "-=" | "*=" | "/=" | "%=" | "**=" | "&=" | "|=" | "^=" 
+    | "<<=" | ">>=" | "<<>=" | "<>>=" | "+%=" | "-%=" | "**%=" | "#="
+}
+
+// Programs
+Prog = { (Imp ~ ";")* ~ (Dec ~ ";")* }
+
+Imp = {"import" ~ space+ ~ Pat ~ space* ~ "="? ~ space* ~ Url}
+
+Url = {
+  any_inline+ ~ ".mo"
+  | "mo:" ~ any_inline+
+  | "canister:" ~ any_inline
+}
+
+//TODO: add spaces
+Dec = {
+    Exp
+    | "let" ~ space+ ~ Pat ~ "=" ~ Exp
+    | "var" ~ space+ ~ Id ~ (":" ~ Typ)? ~ "=" ~ Exp
+    | Sort ~ space+ ~ Id? ~ "=" ~ ObjBody
+    | Function
+    | "type" ~ space+ ~ Id ~ TypParams? ~ "=" ~ Typ
+    | SharedPat? ~ Sort? ~ "class" ~ Id? ~ TypParams? ~ Pat ~ (":" ~ Typ)? ~ ClassBody
+}
+
+Function = {
+    (SharedPat ~ space+)? ~ "func" ~ Id? ~ TypParams? ~ Pat ~ (":" ~ Typ)? ~ "=?" ~ Exp
+}
+
+ObjBody = { (DecField ~ ";")* }
+
+ClassBody = { ("=" ~ Id)? ~ ObjBody }
+
+SharedPat = { "shared" ~ "query"? ~ Pat? }
+
+DecField = { Vis? ~ Stab? ~ Dec }
+
+Vis = { "public" | "private" | "system" }
+
+Stab = { "stable" | "flexible" }
+
+Exp = {
+  Id
+  | Lit
+  | UnOp ~ Exp
+  | Exp ~ BinOp ~ Exp
+  | Exp ~ TextOp ~ Exp
+  | Exp ~ RelOp ~ Exp
+  | "(" ~ space* ~ ")"
+  | "(" ~ Exp ~ ","* ~ ")"
+  | Exp ~ "." ~ Nat
+  | "?" ~ Exp
+  | "{" ~ (ExpField ~ ";")* ~ "}"
+  | "# id" ~ Exp?
+  | Exp ~ "." ~ Id
+  | Exp ~ ":=" ~ Exp
+  | UnOp ~ "=" ~ Exp
+  | Exp ~ BinOp ~ "=" ~ Exp
+  | "[" ~ space* ~ "var"? ~ (Exp ~ ",")* ~ "]"
+  | Exp ~ "[" ~ Exp ~ "]"
+  | SharedPat? ~ "func" ~ FuncExp
+  | Exp ~ TypArgs? ~ Exp
+  | "not" ~ Exp
+  | Exp ~ "and" ~ Exp
+  | Exp ~ "or" ~ Exp
+  | "if" ~ Exp ~ BlockOrExp ~ ("else" ~ BlockOrExp)?
+  | "switch" ~ Exp ~ "{" ~ ("case" ~ Pat ~ BlockOrExp ~ ";")+ ~ "}"
+  | "while" ~ Exp ~ BlockOrExp
+  | "loop" ~ BlockOrExp ~ ("while" ~ Exp)?
+  | "for" ~ ( Pat ~ "in" ~ Exp ) ~ BlockOrExp
+  | "label" ~ Id ~ (":" ~ Typ)? ~ BlockOrExp
+  | "break" ~ Id ~ Exp?
+  | "continue" ~ Id
+  | "return" ~ Exp?
+  | "async" ~ BlockOrExp
+  | "await" ~ BlockOrExp
+  | "throw" ~ Exp
+  | "try" ~ BlockOrExp ~ "catch" ~ Pat ~ BlockOrExp
+  | "assert" ~ BlockOrExp
+  | Exp ~ ":" ~ Typ
+  | Dec // TODO: Exp is a Dec and vise versa
+  | "ignore" ~ BlockOrExp
+  | "do" ~ Block
+  | "do" ~ "?" ~ Block
+  | Exp ~ "!"
+  | "debug" ~ BlockOrExp
+  | "actor" ~ Exp
+  | "to_candid" ~ "(" ~ (Exp ~ ",")* ~ ")"
+  | "from_candid" ~ Exp
+  | "(" ~ Exp ~ ")"
+}
+
+
+BlockOrExp = { Block | Exp }
+
+Block = { "{" ~ (Dec ~ ";")* ~ "}" }
+
+
+Pat = {
+  "_"
+  | Id
+  | UnOp? ~ Lit
+  | "(" ~ (Pat ~ ",")* ~ ")"
+  | "{" ~ PatField ~ ";"* ~ "}"
+  | "#" ~ Id ~ Pat? 
+  | "?" ~ Pat
+  | Pat ~ ":" ~ Typ
+  | Pat ~ "or" ~ Pat
+}
+
+PatField = {
+  Id ~ "(:" ~ Typ ~ ")" ~ "=" ~ Pat
+  | Id ~ "(:" ~ Typ ~ ")"
+}
+
+
+Typ = {
+  Path ~ TypArgs?
+  | Sort? ~ "{" ~ (TypField ~ ";")* ~ "}"
+  | "{" ~ (TypTag ~ ";")* ~ "}"
+  | "{" ~ "#" ~ "}"
+  | "[" ~ "var"? ~ Typ ~ "]"
+  | "Null"
+  | "?" ~ Typ
+  | Shared? ~ TypParams? ~ Typ ~ "->" ~ Typ
+  | "async" ~ Typ
+  | "(" ~ ((Id ~ ":")? ~ Typ ~ ",")* ~ ")"
+  | "Any"
+  | "None"
+  | Typ ~ "and" ~ Typ
+  | Typ ~ "or" ~ Typ
+  | "Error"
+  | "(" ~ Typ ~ ")"
+}
+
+Sort = { "actor" | "module" | "object" }
+
+Shared = { "shared" ~ space+ ~ "query"? }
+
+Path = { Id | Path ~ "." ~ Id }
+
+Bool = { "true" | "false" }
+
+
+TypField = {
+    Id ~ ":" ~ Typ
+    | "var" ~ Id ~ ":" ~ Typ
+    | Id ~ TypParams? ~ Typ ~ ":" ~ Typ
+}
+
+TypTag = {
+    Id ~ ":" ~ Typ
+    | Id
+}
+
+TypParams = {
+    TypParam ~ ("," ~ TypParam)*
+}
+
+TypParam = {
+    Id ~ ":" ~ Typ
+    | Id
+}
+
+TypArgs = { "<" ~ Typ ~ ("," ~ Typ)* ~ ">"}
+
+ExpField = {
+    "var"? ~ Id ~ (":" ~ Typ) ~ "=" ~ Exp
+    | "var"? ~ Id ~ (":" ~ Typ)
+}
+
+FuncExp = {
+    //https://github.com/dfinity/motoko/blob/33278441c0eca523068c623881b690709af58197/src/mo_frontend/parser.mly#L122=
+    "todo"
+}
