@@ -16,12 +16,6 @@ calculation = _{ SOI ~ expr ~ EOI }
 WHITESPACE = _{ " " | "\t" }
 
 
-Exp = {
-  "asdf"
-  //| "# id" ~ Exp?
-  | Exp ~ "." ~ "qwer"
-}
-
 
 
 // helper

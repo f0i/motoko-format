@@ -5,5 +5,6 @@
 
 
 /// doc comment
-/// multi line
+/// multi Line
 
+123;  // comment at end of line

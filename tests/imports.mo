@@ -1,0 +1,30 @@
+import List = "mo:ListLib";
+      /// asdf
+import asdf = "a.mo"; // with comment
+
+// from https://internetcomputer.org/docs/current/developer-docs/build/languages/motoko/modules-and-imports/
+
+import Array "mo:base/Array";
+import Result "mo:base/Result";
+
+// TODO: open issue: wrong separator in docs!
+//import { map, find, foldLeft = fold } = "mo:base/Array";
+import { map; find; foldLeft = fold } = "mo:base/Array";
+
+import Types "types";
+import Utils "utils";
+
+
+import Render "mo:redraw/Render";
+import Mono5x5 "mo:redraw/glyph/Mono5x5";
+
+import Counters "Counters";
+import Debug "mo:base/Debug";
+import Nat "mo:base/Nat";
+
+import BigMap "canister:BigMap";
+import Connectd "canister:connectd";
+
+import List "mo:base/List:";
+import Sequence "mo:collections/List";
+import L "mo:base/List";
