@@ -5,11 +5,12 @@ use pest::iterators::Pair;
 use pest::Parser;
 
 use std::fs;
+use std::rc::Rc;
 
 fn main() {
     //let file = "tests/comment.mo";
     let files = vec![
-        //"tests/comment.mo",
+        "tests/comment.mo",
         "tests/imports.mo",
         //"tests/main.mo",
         //"tests/module.mo",
@@ -59,16 +60,16 @@ pub enum Node {
         content: String,
     },
     WHITESPACE(String),
-    EOI,
     Unhandled(String, String),
+    Text(String),
 
     Program {
         imports: Vec<Node>,
         declarations: Vec<Node>,
     },
     Import {
-        what: String,
-        from: String,
+        what: Box<Node>,
+        from: Box<Node>,
         with_equal: bool,
     },
     PatternNullary {
@@ -139,14 +140,23 @@ impl Node {
             Rule::LineComment => Self::from_inner_pairs(pair).into_iter().nth(1).unwrap(),
             Rule::BlockComment => Self::from_inner_pairs(pair).into_iter().nth(1).unwrap(),
             Rule::Import => {
-                let pattern = Self::from_nth_inner_pair(pair, 0);
+                let mut sub = Self::from_inner_pairs(pair)
+                    .into_iter()
+                    .filter(|p| matches!(p, Node::PatternNullary { .. } | Node::Text(_)));
+
+                let what = sub.next().unwrap();
+                let from = sub.next().unwrap();
+
                 Node::Import {
                     // TODO
-                    what: raw.into(),
-                    from: "".into(),
+                    what: Box::new(what),
+                    from: Box::new(from),
                     with_equal: false,
                 }
             }
+            Rule::PatternNullary => Node::PatternNullary { content: raw },
+            Rule::Text => Node::Text(raw),
+
             // Others
             Rule::Semicolon | Rule::EOL | Rule::EOI => {
                 Node::Unhandled(raw, format!("{:?}", pair.as_rule()))
@@ -160,10 +170,6 @@ impl Node {
     }
 
     fn from_pairs(pairs: Vec<Pair<Rule>>) -> Vec<Node> {
-        // println!("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-        // println!("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
-        // println!("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-        // println!("{:?}", pairs);
         pairs
             .into_iter()
             .map(|pair| Self::from_pair(pair))
@@ -213,7 +219,6 @@ impl Node {
             } => format!("/// {}", content.trim()),
             Node::WHITESPACE(s) => print_whitespace(&s),
             Node::Unhandled(s, _) => s.clone(),
-            Node::EOI => "".into(),
             Node::Program {
                 imports,
                 declarations,
@@ -234,19 +239,19 @@ impl Node {
                 with_equal,
             } => {
                 if *with_equal {
-                    format!("{} = {};", what.trim(), from.trim())
+                    format!("{} = {};", what.print(options), from.print(options))
                 } else {
-                    format!("{} {};", what.trim(), from.trim())
+                    format!("{} {};", what.print(options), from.print(options))
                 }
             }
             Node::PatternNullary { content } => content.into(),
+            Node::Text(t) => t.into(),
         };
         formatted
     }
 
     fn debug(&self) -> String {
         let formatted = match self {
-            Node::EOI => "".into(),
             Node::Program {
                 imports,
                 declarations,
