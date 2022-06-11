@@ -6,3 +6,5 @@
 [pest.rs](https://pest.rs/)
 
 [Calculator parser example](https://createlang.rs/01_calculator/ast.html)
+
+[dprint (rust altrenative for prettier)](https://dprint.dev/plugin-dev/)
