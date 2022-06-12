@@ -1,13 +1,33 @@
 [package]
-name = "parser"
+name = "dprint-plugin-motoko"
 version = "0.1.0"
+authors = ["Martin Sigloch <motoko-format@projects.f0i.de>"]
 edition = "2021"
+# TODO?: rename to dprint-plugin-motoko
+homepage = "https://gitlab.com/f0i/motoko-formater"
+license = "MIT"
+repository = "https://github.com/dprint/motoko-formater"
+description = "Motoko formatter for dprint."
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
-#pest = "2.0"
-#pest_derive = "2.1"
-pest = { path = "./pest/pest"}
-pest_derive = { path = "./pest/derive"}
-lazy_static = "1.4.0"
+# parse
+pest = "2.1"
+pest_derive = "2.1"
+# pest = { path = "./pest/pest"}
+# pest_derive = { path = "./pest/derive"}
+
+# formatter
+anyhow = "1.0.51"
+dprint-core = { version = "0.58", features = ["wasm"] }
+serde = { version = "1.0.117", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+
+# TODO: remove:
+pulldown-cmark = { version = "0.9.1", default-features = false }
+regex = "1"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.0"
