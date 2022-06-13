@@ -17,11 +17,11 @@ pub struct Node {
 }
 
 macro_rules! make_node_types {
-    ($($rule:ident => $type:ident),* $(,)?) => {
+    ($($rule:ident),* $(,)?) => {
         #[derive(Debug, Clone, PartialEq)]
         pub enum NodeType {
             $(
-                $type,
+                $rule,
             )+
             Unknown(String)
         }
@@ -30,7 +30,7 @@ macro_rules! make_node_types {
             fn from_pair(pair: &Pair<Rule>) -> NodeType {
                 match pair.as_rule() {
                 $(
-                    Rule::$rule => NodeType::$type,
+                    Rule::$rule => NodeType::$rule,
                 )+
                     rule => NodeType::Unknown(format!("{:?}", rule))
                 }
@@ -40,70 +40,49 @@ macro_rules! make_node_types {
 }
 
 make_node_types! {
-    Program => Program,
-    Import => Import,
-    LineComment => InlineComment,
-    DocComment => DocComment,
-    BlockComment => BlockComment,
-    PatternPlain => PatternPlain,
-    PatternNullary => PatternNullary,
-    EOI => Eoi,
-    WHITESPACE => Whitespace,
-    Semicolon => Semicolon,
-    Id => Id,
-    COMMENT => Comment,
-    Text => Text,
-    EqualSign => EqualSign,
-    LineCommentContent => LineCommentContent,
-    DocCommentContent =>  DocCommentContent,
-    BlockCommentContent => BlockCommentContent,
-    CheckWhitespace => CheckWhitespace,
+    Program,
+    CompleteImport,
+    CompleteDeclaration,
+    Import,
+    LineComment,
+    DocComment,
+    BlockComment,
+    PatternPlain,
+    PatternNullary,
+    EOI,
+    WHITESPACE,
+    Semicolon,
+    Id,
+    COMMENT,
+    Comment,
+    Text,
+    EqualSign,
+    LineCommentContent,
+    DocCommentContent,
+    BlockCommentContent,
+    Declaration,
+    Lit,
+    ShouldNewline,
+    C,
 }
 
 #[derive(Debug, Clone)]
 pub struct Declaration {}
 
-#[derive(Debug, Clone)]
-pub enum CommentType {
-    Doc,
-    Line,
-    Block,
-}
-
 pub fn parse(content: &str) -> std::result::Result<Vec<Node>, pest::error::Error<Rule>> {
     let mut ast = vec![];
     let mut pairs = MotokoParser::parse(Rule::Motoko, &content)?;
     for pair in pairs.next().unwrap().into_inner() {
-        //println!("{:?}", pair.clone());
-        //ast.push(build_ast_node(pair));
         ast.push(Node::from_pair(pair))
     }
     Ok(ast)
 }
 
-// comments
-fn parse_comment(content: &str) -> Node {
-    let mut pairs = MotokoParser::parse(Rule::Comment, &content).unwrap();
-    Node::new(pairs.peek().unwrap())
-}
-
 impl Node {
-    fn new(pair: Pair<Rule>) -> Self {
-        Node::from_pair(pair)
-    }
-
-    fn get_child(&self, node_type: &NodeType) -> Option<Node> {
-        for node in self.children.iter() {
-            if node.node_type == *node_type {
-                return Some(node.clone());
-            }
-        }
-        None
-    }
-
     fn from_pair(pair: Pair<Rule>) -> Self {
         let node_type = NodeType::from_pair(&pair);
-        let original = pair.as_str().into();
+        // TODO?: replace "\t" in comments and strings with "\\t"
+        let original = pair.as_str().replace("\t", "  ").into();
         let start = pair.as_span().start();
         let end = pair.as_span().end();
         let children = Self::from_inner_pairs(pair);
@@ -133,35 +112,27 @@ impl Node {
 
 impl Node {
     pub fn print(&self, indent: String) -> String {
-        let formatted = match self {
-            Node {
-                node_type: NodeType::Program,
-                children,
-                ..
-            } => {
-                let strings: Vec<String> = children
-                    .into_iter()
-                    .map(|node| node.print(format!("{}  ", indent)))
-                    .collect();
-                strings.join("\n")
-            }
-            _ => format!("{}{:?}\n", indent, self),
-        };
-        formatted
+        let strings: Vec<String> = self
+            .children
+            .clone()
+            .into_iter()
+            .map(|node| node.print(format!("{}|  ", indent)).into())
+            .collect();
+        let children = strings.join("\n");
+        if self.children.is_empty() {
+            format!("{}{:?}(  {:?}  )", indent, self.node_type, self.original)
+        } else {
+            format!(
+                "{}{:?}(  {:?}\n{}\n{})",
+                indent, self.node_type, self.original, children, indent
+            )
+        }
     }
-}
-
-fn print_whitespace(s: &String) -> String {
-    match s.matches("\n").count() {
-        0 => " ",
-        1 => "\n",
-        _ => "\n\n",
-    }
-    .into()
 }
 
 impl fmt::Debug for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&format!("{:?}({:?})", self.node_type, self.children))
+        f.write_str(format!("{}\n", self.print("".into())).as_str())
+        //f.write_str(&format!("{:?}({:?})", self.node_type, self.children))
     }
 }

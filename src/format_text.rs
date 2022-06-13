@@ -1,4 +1,3 @@
-use anyhow::Result;
 use dprint_core::configuration::resolve_new_line_kind;
 use dprint_core::formatting::PrintOptions;
 use dprint_core::plugins::FormatResult;
@@ -8,15 +7,19 @@ use crate::motoko_parser as motoko;
 
 use crate::configuration::Configuration;
 use crate::generation::generate;
-use crate::motoko_parser::Node;
 
 pub fn format_text(_file_path: &Path, text: &str, config: &Configuration) -> FormatResult {
-    let node = motoko::parse(text)?;
+    let nodes = motoko::parse(text)?;
 
-    let ir = generate(&node, text, config);
+    let ir = generate(&nodes, text, config);
 
     let result = dprint_core::formatting::format(|| ir, config_to_print_options(text, config));
-    println!("text: {} => {} <> {:?}", text, result, node);
+    println!(
+        "text: {} => {} <> {}",
+        text,
+        result,
+        nodes.iter().map(|n| format!("{:?}", n)).collect::<String>()
+    );
     if result == text {
         Ok(None)
     } else {

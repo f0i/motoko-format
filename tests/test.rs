@@ -46,7 +46,7 @@ fn test_specs() {
             }
 
             #[cfg(not(feature = "tracing"))]
-      panic!("\n====\nPlease run with `cargo test --features tracing` to get trace output\n====\n")
+            panic!("\n====\nPlease run with `cargo test --features tracing` to get trace output\n====\n")
         },
     )
 }

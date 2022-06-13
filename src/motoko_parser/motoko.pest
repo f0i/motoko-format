@@ -3,8 +3,11 @@ any_inline = @{ !NEWLINE ~ ANY }
 space = @{ " " | "\t" }
 EOL = _{ !(!NEWLINE) | EOI }
 
-WHITESPACE = { ( space | NEWLINE )+ }
-COMMENT = { Comment }
+WHITESPACE = @{ ( space | NEWLINE )+ }
+COMMENT = @{ Comment }
+C = ${ (WHITESPACE | Comment)* }
+
+ShouldNewline = { C }
 
 
 // Lit
@@ -40,17 +43,15 @@ Text = @{ "\"" ~ (!"\"" ~ Character)* ~ "\"" } // TODO: check "'" and '"' and ''
 Id = @{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
 
 // comments
-Comment = { DocComment | LineComment | BlockComment }
+Comment = ${ ( DocComment | LineComment | BlockComment ) }
 DocComment = ${ ("/// " ~ DocCommentContent ~ EOL)+ }
 LineComment = ${ "//"  ~ LineCommentContent ~ EOL }
-BlockComment = ${ "/*" ~ BlockCommentContent ~ "*/" ~ CheckWhitespace }
+BlockComment = ${ "/*" ~ " "? ~ BlockCommentContent ~ "*/" }
 DocCommentContent = @{ any_inline* }
 LineCommentContent = @{ any_inline* }
 BlockCommentContent = @{
     ((!("*/" | "/*") ~ ANY) | BlockComment)* // allow nested comments
 }
-
-CheckWhitespace = @{ WHITESPACE? }
 
 // Syntax from grammar.txt
 Motoko = {
@@ -58,17 +59,20 @@ Motoko = {
 }
 Program = {
   //List
-  (Import ~ Semicolon)*
-  ~ (Declaration ~ (Semicolon | EOI))* // Last Semicolon seems to be optional
+  CompleteImport*
+  ~ CompleteDeclaration*
 }
 
-//
-MotokoIsh = {
-  SOI ~ ProgramIsh ~ EOI
+
+CompleteImport = ${ Import ~ C ~ Semicolon ~ ShouldNewline }
+
+CompleteDeclaration = ${
+  Declaration ~ C
+  // Last Semicolon is optional
+  ~ (Semicolon | EOI)
+  ~ ShouldNewline
 }
-ProgramIsh = {
-  (Import ~ Semicolon | Declaration ~ Semicolon | Declaration ~ EOI | InvalidPart)*
-}
+
 
 InvalidPart = { (!";" ~ ANY)+ ~ ";"?}
 
@@ -150,8 +154,9 @@ TypeField = {
 }
 
 Declaration = {
-  Lit
+  ( Lit
   | "not implemented"
+  ) ~ COMMENT?
 }
 
 
