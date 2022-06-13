@@ -1,0 +1,155 @@
+// helper
+any_inline = @{ !NEWLINE ~ ANY }
+space = @{ " " | "\t" }
+EOL = _{ !(!NEWLINE) | EOI }
+
+WHITESPACE = { ( space | NEWLINE )+ }
+COMMENT = { Comment }
+
+
+// Lit
+Lit = ${ Float | Nat | Char | Text }
+Nat = ${ "0x" ~ HexNum | Num }
+Num = @{ ASCII_DIGIT ~ ( "_"? ~ ASCII_DIGIT )* }
+HexNum = @{ ASCII_HEX_DIGIT ~ ( "_"? ~ ASCII_HEX_DIGIT )* }
+Sign = @{ "-" }
+
+Frac = @{ Num }
+HexFrac = @{ HexNum }
+Float = @{
+  Num ~ "." ~ Frac?
+  | Num ~ ("." ~ Frac?)? ~ ("e" | "E") ~ Sign? ~ Num
+  | HexNum ~ "." ~ HexFrac?
+  | "0x" ~ HexNum ~ ("." ~ HexFrac?)? ~ ("p" | "P") ~ Sign? ~ Num
+}
+
+Escape = { "n" | "r" | "t" | "\\" | "\'" | "\"" }
+
+Character = @{ 
+    "\\" ~ Escape
+    | "\\" ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT
+    | "\\{" ~ HexNum ~ "}"
+    | !("\\") ~ any_inline
+}
+
+Char = @{ "'" ~ (!"'" ~ Character) ~ "'" }
+Text = @{ "\"" ~ (!"\"" ~ Character)* ~ "\"" } // TODO: check "'" and '"' and ''' and """ in motoko
+
+
+
+Id = @{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
+
+// comments
+Comment = { DocComment | LineComment | BlockComment }
+DocComment = ${ ("/// " ~ DocCommentContent ~ EOL)+ }
+LineComment = ${ "//"  ~ LineCommentContent ~ EOL }
+BlockComment = ${ "/*" ~ BlockCommentContent ~ "*/" }
+DocCommentContent = @{ any_inline* }
+LineCommentContent = @{ any_inline* }
+BlockCommentContent = @{
+    ((!("*/" | "/*") ~ ANY) | BlockComment)* // allow nested comments
+}
+
+// Syntax from grammar.txt
+Motoko = {
+  SOI ~ Program ~ EOI
+}
+Program = {
+  //List
+  (Import ~ Semicolon)*
+  ~ (Declaration ~ (Semicolon | EOI))* // Last Semicolon seems to be optional
+}
+
+//
+MotokoIsh = {
+  SOI ~ ProgramIsh ~ EOI
+}
+ProgramIsh = {
+  (Import ~ Semicolon | Declaration ~ Semicolon | Declaration ~ EOI | InvalidPart)*
+}
+
+InvalidPart = { (!";" ~ ANY)+ ~ ";"?}
+
+Semicolon = @{ ";" }
+EqualSign = @{ "=" }
+
+// Imports
+Import = { "import" ~ PatternNullary ~ "="? ~ Text }
+PatternNullary = {
+  "{" ~ /*List*/ (PatternField  ~ (Semicolon ~ PatternField)*)? ~ "}"
+  | PatternPlain
+}
+PatternField = {
+  Id ~ (":" ~ Type)? ~ ("=" ~ Pattern)?
+}
+Pattern = { PatternBin }
+PatternBin = {
+  PatternUn ~ ("or" ~ PatternBin)* ~ (":" ~ Type)* 
+}
+PatternPlain = {
+  "_"
+  | "(" ~ /*List*/(PatternField ~ (";" ~ PatternField)*)? ~ ")"
+  | Lit
+  | Id
+}
+PatternUn = {
+  "#" ~ Id ~ PatternNullary?
+  | "?" ~ PatternUn
+  | UnOp ~ Lit
+  | PatternNullary
+}
+
+UnOp = { "+" | "-" | "^" } 
+
+Type = {
+    TypeNoBin ~ "and" ~ Type
+    | TypeNoBin ~ "or" ~ Type
+    | TypeNoBin
+}
+
+TypeNoBin = {
+    FuncSortOpt ~ ("<" ~/*List*/(TypeBind ~ ("," ~ TypeBind)*)? ~ ">")? ~ TypeUn ~ "->" ~ TypeNoBin
+    | TypePre
+}
+
+FuncSortOpt = { "shared" ~ (space ~ "query")? | "query"?}
+
+TypePre = {
+    "async" ~ TypePre
+    | ObjSort ~ TypObj
+    | TypeUn
+} 
+
+ObjSort = { "object" | "actor" | "module" }
+
+TypeBind = { Id ~ ("<:" ~ Type)? }
+
+TypeUn = {
+  "?" ~ TypeUn
+  | TypeNullary
+}
+
+TypeNullary = {
+    "(" ~ /*List*/(TypeItem ~ ("," ~ TypeItem)*)? ~ ")"
+    | "[" ~ "var"? ~ Type ~ "]"
+    //TODO: | <typ_obj>
+    //TODO: | <typ_variant>
+    //TODO: | <id> ("." <id>)* <typ_args>?
+} 
+TypeItem = { (Id ~ ":")? ~ Type }
+
+TypObj = {
+    "{" ~ /*List*/(TypeField ~ (";" ~ TypeField)*)? ~ "}"
+} 
+
+TypeField = {
+  "var"? ~ Id ~ ":" ~ Type
+  | Id ~ ("<" ~ /*List*/(TypeBind ~ ("," ~  TypeBind)*)? ~ ">")? ~ TypeNullary ~ ":" ~ Type
+}
+
+Declaration = {
+  Lit
+  | "not implemented"
+}
+
+
