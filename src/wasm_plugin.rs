@@ -10,9 +10,9 @@ use std::path::Path;
 use super::configuration::resolve_config;
 use super::configuration::Configuration;
 
-struct DockerfilePluginHandler;
+struct MotokoPluginHandler;
 
-impl SyncPluginHandler<Configuration> for DockerfilePluginHandler {
+impl SyncPluginHandler<Configuration> for MotokoPluginHandler {
   fn resolve_config(&mut self, config: ConfigKeyMap, global_config: &GlobalConfiguration) -> ResolveConfigurationResult<Configuration> {
     resolve_config(config, global_config)
   }
@@ -22,12 +22,13 @@ impl SyncPluginHandler<Configuration> for DockerfilePluginHandler {
     PluginInfo {
       name: env!("CARGO_PKG_NAME").to_string(),
       version: version.clone(),
-      config_key: "dockerfile".to_string(),
-      file_extensions: vec!["dockerfile".to_string()],
-      file_names: vec!["Dockerfile".to_string()],
-      help_url: "https://dprint.dev/plugins/dockerfile".to_string(),
-      config_schema_url: format!("https://plugins.dprint.dev/dprint/dprint-plugin-dockerfile/{}/schema.json", version),
-      update_url: Some("https://plugins.dprint.dev/dprint/dprint-plugin-dockerfile/latest.json".to_string()),
+      config_key: "motoko".to_string(),
+      file_extensions: vec!["mo".to_string()],
+      file_names: vec![],
+      help_url: "https://gitlab.com/f0i/motoko-formatter".to_string(),
+      // TODO: setup CI
+      config_schema_url: format!("https://gitlab.com/f0i/motoko-formatter/-/jobs/artifacts/{}/raw/public/dprint/schema.json?job=pages", version),
+      update_url: Some("https://f0i.gitlab.io/motoko-formater/dprint/latest.json".to_string()),
     }
   }
 
@@ -46,4 +47,4 @@ impl SyncPluginHandler<Configuration> for DockerfilePluginHandler {
   }
 }
 
-generate_plugin_code!(DockerfilePluginHandler, DockerfilePluginHandler);
+generate_plugin_code!(MotokoPluginHandler, MotokoPluginHandler);

@@ -3,6 +3,7 @@
 # test files
 /tests/test_project
 /target
+# reference projects
 /sample_project
 /pest
-/dprint-plugin-markdown
+/dprint-plugin-*
