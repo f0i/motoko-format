@@ -1,4 +1,5 @@
 /// Parser to generate AST Nodes
+use core::fmt;
 use pest::iterators::Pair;
 use pest::Parser;
 
@@ -6,34 +7,57 @@ use pest::Parser;
 #[grammar = "motoko_parser/motoko.pest"]
 pub struct MotokoParser;
 
-#[derive(Debug, Clone)]
-pub struct PrintOptions {
-    indent: usize,
-    line_width: usize,
+#[derive(Clone)]
+pub struct Node {
+    pub original: String,
+    pub start: usize,
+    pub end: usize,
+    pub children: Vec<Node>,
+    pub node_type: NodeType,
 }
 
-#[derive(Debug, Clone)]
-pub enum Node {
-    Comment {
-        kind: CommentType,
-        content: String,
-    },
-    WHITESPACE(String),
-    Raw(String),
-    Text(String),
+macro_rules! make_node_types {
+    ($($rule:ident => $type:ident),* $(,)?) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub enum NodeType {
+            $(
+                $type,
+            )+
+            Unknown(String)
+        }
 
-    Program {
-        nodes: Vec<Node>,
-    },
-    Import {
-        what: Box<Node>,
-        from: Box<Node>,
-        with_equal: bool,
-    },
-    PatternNullary {
-        content: String,
-    },
-    None(String),
+        impl NodeType {
+            fn from_pair(pair: &Pair<Rule>) -> NodeType {
+                match pair.as_rule() {
+                $(
+                    Rule::$rule => NodeType::$type,
+                )+
+                    rule => NodeType::Unknown(format!("{:?}", rule))
+                }
+            }
+        }
+    };
+}
+
+make_node_types! {
+    Program => Program,
+    Import => Import,
+    LineComment => InlineComment,
+    DocComment => DocComment,
+    BlockComment => BlockComment,
+    PatternPlain => PatternPlain,
+    PatternNullary => PatternNullary,
+    EOI => Eoi,
+    WHITESPACE => Whitespace,
+    Semicolon => Semicolon,
+    Id => Id,
+    COMMENT => Comment,
+    Text => Text,
+    EqualSign => EqualSign,
+    LineCommentContent => LineCommentContent,
+    DocCommentContent =>  DocCommentContent,
+    BlockCommentContent => BlockCommentContent,
+    CheckWhitespace => CheckWhitespace,
 }
 
 #[derive(Debug, Clone)]
@@ -60,61 +84,36 @@ pub fn parse(content: &str) -> std::result::Result<Vec<Node>, pest::error::Error
 // comments
 fn parse_comment(content: &str) -> Node {
     let mut pairs = MotokoParser::parse(Rule::Comment, &content).unwrap();
-    Node::from_nth_inner_pair(pairs.peek().unwrap(), 0)
-    //Node::from_pair(pairs.peek().unwrap().into_inner().next().unwrap())
+    Node::new(pairs.peek().unwrap())
 }
 
 impl Node {
-    fn from_pair(pair: Pair<Rule>) -> Node {
-        let raw: String = pair.as_str().into();
-        //println!("pair: {:?}", pair);
-        match pair.as_rule() {
-            Rule::COMMENT => parse_comment(raw.as_str()),
-            Rule::WHITESPACE => Node::WHITESPACE(raw),
+    fn new(pair: Pair<Rule>) -> Self {
+        Node::from_pair(pair)
+    }
 
-            Rule::Program => Node::Program {
-                nodes: Self::from_inner_pairs(pair),
-            },
-            Rule::DocCommentContent => Node::Comment {
-                kind: CommentType::Doc,
-                content: pair.as_str().into(),
-            },
-            Rule::LineCommentContent => Node::Comment {
-                kind: CommentType::Line,
-                content: pair.as_str().into(),
-            },
-            Rule::BlockCommentContent => Node::Comment {
-                kind: CommentType::Block,
-                content: pair.as_str().into(),
-            },
-
-            Rule::DocComment => Self::from_nth_inner_pair(pair, 0),
-            Rule::LineComment => Self::from_nth_inner_pair(pair, 0),
-            Rule::BlockComment => Self::from_nth_inner_pair(pair, 0),
-            Rule::Import => {
-                let mut sub = Self::from_inner_pairs(pair)
-                    .into_iter()
-                    .filter(|p| matches!(p, Node::PatternNullary { .. } | Node::Text(_)));
-
-                let what = sub.next().unwrap();
-                let from = sub.next().unwrap();
-
-                Node::Import {
-                    // TODO
-                    what: Box::new(what),
-                    from: Box::new(from),
-                    with_equal: false,
-                }
+    fn get_child(&self, node_type: &NodeType) -> Option<Node> {
+        for node in self.children.iter() {
+            if node.node_type == *node_type {
+                return Some(node.clone());
             }
-            Rule::PatternNullary => Node::PatternNullary { content: raw },
-            Rule::Text => Node::Text(raw),
+        }
+        None
+    }
 
-            // Others
-            Rule::InvalidPart => Node::Raw(raw),
-            Rule::Semicolon | Rule::EOL | Rule::EOI => Node::None(format!("{:?}", pair.as_rule())),
-            Rule::Declaration => Node::Raw(raw), // TODO
+    fn from_pair(pair: Pair<Rule>) -> Self {
+        let node_type = NodeType::from_pair(&pair);
+        let original = pair.as_str().into();
+        let start = pair.as_span().start();
+        let end = pair.as_span().end();
+        let children = Self::from_inner_pairs(pair);
 
-            rule => panic!("Unhandled parser rule {:?}", rule),
+        Node {
+            node_type,
+            children,
+            start,
+            end,
+            original,
         }
     }
 
@@ -128,82 +127,25 @@ impl Node {
             .map(|pair| Self::from_pair(pair))
             .collect()
     }
-
-    fn from_nth_inner_pair(pair: Pair<Rule>, n: usize) -> Node {
-        let rule_string = format!("{:?}", pair.as_rule());
-
-        if let Some(p) = pair.into_inner().into_iter().nth(n) {
-            Self::from_pair(p)
-        } else {
-            Node::None(rule_string)
-        }
-    }
 }
 
-pub fn print(nodes: Vec<Node>) -> String {
-    let options = PrintOptions::default();
-    nodes.iter().map(|n| n.print()).collect::<String>()
-}
-pub fn debug(nodes: Vec<Node>) -> String {
-    nodes.iter().map(|n| n.debug()).collect::<String>()
-}
-
-impl PrintOptions {
-    fn default() -> Self {
-        Self {
-            indent: 4,
-            line_width: 100,
-        }
-    }
-}
+// TODO: remove all of the below:
 
 impl Node {
-    pub fn print(&self) -> String {
+    pub fn print(&self, indent: String) -> String {
         let formatted = match self {
-            Node::Comment {
-                kind: CommentType::Doc,
-                content,
-            } => format!("/// {}", content.trim()),
-            Node::Comment {
-                kind: CommentType::Line,
-                content,
-            } => format!("// {}", content.trim()),
-            Node::Comment {
-                kind: CommentType::Block,
-                content,
-            } => format!("/// {}", content.trim()),
-            Node::WHITESPACE(s) => print_whitespace(&s),
-            Node::Raw(s) => s.clone(),
-            Node::Program { nodes } => {
-                let node_strings: Vec<String> =
-                    nodes.into_iter().map(|node| node.print()).collect();
-                format!("{}", node_strings.join("\n"))
-            }
-            Node::Import {
-                what,
-                from,
-                with_equal,
+            Node {
+                node_type: NodeType::Program,
+                children,
+                ..
             } => {
-                if *with_equal {
-                    format!("{} = {};", what.print(), from.print())
-                } else {
-                    format!("{} {};", what.print(), from.print())
-                }
-            }
-            Node::PatternNullary { content } => content.into(),
-            Node::Text(t) => t.into(),
-            Node::None(_) => "".into(),
-        };
-        formatted
-    }
-
-    pub fn debug(&self) -> String {
-        let formatted = match self {
-            Node::Program { nodes } => {
-                let strings: Vec<String> = nodes.into_iter().map(|node| node.debug()).collect();
+                let strings: Vec<String> = children
+                    .into_iter()
+                    .map(|node| node.print(format!("{}  ", indent)))
+                    .collect();
                 strings.join("\n")
             }
-            _ => format!("{:?}\n", self),
+            _ => format!("{}{:?}\n", indent, self),
         };
         formatted
     }
@@ -216,4 +158,10 @@ fn print_whitespace(s: &String) -> String {
         _ => "\n\n",
     }
     .into()
+}
+
+impl fmt::Debug for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&format!("{:?}({:?})", self.node_type, self.children))
+    }
 }

@@ -1,6 +1,0 @@
-== should format ==
-import  asdf   "qwer.mo"
-;
-
-[expect]
-import asdf "qwer.mo";

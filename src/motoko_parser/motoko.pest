@@ -43,12 +43,14 @@ Id = @{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
 Comment = { DocComment | LineComment | BlockComment }
 DocComment = ${ ("/// " ~ DocCommentContent ~ EOL)+ }
 LineComment = ${ "//"  ~ LineCommentContent ~ EOL }
-BlockComment = ${ "/*" ~ BlockCommentContent ~ "*/" }
+BlockComment = ${ "/*" ~ BlockCommentContent ~ "*/" ~ CheckWhitespace }
 DocCommentContent = @{ any_inline* }
 LineCommentContent = @{ any_inline* }
 BlockCommentContent = @{
     ((!("*/" | "/*") ~ ANY) | BlockComment)* // allow nested comments
 }
+
+CheckWhitespace = @{ WHITESPACE? }
 
 // Syntax from grammar.txt
 Motoko = {
@@ -74,7 +76,7 @@ Semicolon = @{ ";" }
 EqualSign = @{ "=" }
 
 // Imports
-Import = { "import" ~ PatternNullary ~ "="? ~ Text }
+Import = { "import" ~ PatternNullary ~ EqualSign? ~ Text }
 PatternNullary = {
   "{" ~ /*List*/ (PatternField  ~ (Semicolon ~ PatternField)*)? ~ "}"
   | PatternPlain
