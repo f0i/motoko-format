@@ -109,7 +109,7 @@ PatternUn = {
   | PatternNullary
 }
 
-UnOp = { "+" | "-" | "^" } 
+UnOp = @{ "+" | "-" | "^" } 
 
 Type = {
     TypeNoBin ~ "and" ~ Type
@@ -142,11 +142,15 @@ TypeUn = {
 TypeNullary = {
     "(" ~ /*List*/(TypeItem ~ ("," ~ TypeItem)*)? ~ ")"
     | "[" ~ "var"? ~ Type ~ "]"
-    //TODO: | <typ_obj>
     //TODO: | <typ_variant>
-    //TODO: | <id> ("." <id>)* <typ_args>?
+    //TODO: | <typ_obj>
+    | Id ~ ("." ~ Id)* ~ TypeArgs?
 } 
 TypeItem = { (Id ~ ":")? ~ Type }
+
+TypeArgs = {
+  "<" ~ /*List*/(Type ~ ("," ~ Type)*)? ~ ">"
+}
 
 TypObj = {
     "{" ~ /*List*/(TypeField ~ (";" ~ TypeField)*)? ~ "}"
@@ -154,13 +158,195 @@ TypObj = {
 
 TypeField = {
   "var"? ~ Id ~ ":" ~ Type
-  | Id ~ ("<" ~ /*List*/(TypeBind ~ ("," ~  TypeBind)*)? ~ ">")? ~ TypeNullary ~ ":" ~ Type
+  | Id ~ TypeBindList? ~ TypeNullary ~ ":" ~ Type
+}
+
+TypeBindList = {
+  "<" ~ /*List*/(TypeBind ~ ("," ~  TypeBind)*)? ~ ">"
 }
 
 Declaration = {
-  ( Lit
-  | "not implemented"
-  ) ~ COMMENT?
+  ( DeclarationVar
+  | DeclarationNonVar
+  | ExpNonDec
+  ) ~ COMMENT? // hack to collect all tailing whitespace and comments
 }
 
+DeclarationVar = {
+  "var" ~ Id ~ (":" ~ Type)? ~ "=" ~ Exp
+}
 
+DeclarationNonVar = {
+  "let" ~ Pattern ~ "=" ~ Exp
+  | "type" ~ Id ~ TypeBindList? ~ "=" ~ Type
+  | ObjSort ~ Id? ~ "="? ~ ObjBody
+  | SharedPatternOpt ~ "func" ~ Id? ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  //TODO
+}
+
+SharedPatternOpt = {
+    "shared" ~ "query"? ~ PatternPlain?
+    | "query" ~ PatternPlain
+    | "query"?
+}
+
+FuncBody = {
+  "=" ~ Exp
+  | Block
+}
+
+Block = {
+  "{" ~ /*List*/(Declaration ~ (";" ~ Declaration)*)? ~ "}"
+}
+
+ObjBody = {
+  "{" ~ /*List*/(DeclarationField ~ (";" ~ DeclarationField)*)? ~ "}"
+}
+DeclarationField = { Visibility ~ Stability ~ Declaration }
+Visibility = {
+    ("private" | "public" | "system")?
+}
+Stability = {
+  ("flexible" | "stable")?
+}
+
+Exp = {
+  DeclarationVar
+  | ExpNonVar
+}
+
+ExpNonVar = {
+  ExpNonDec
+  | DeclarationNonVar
+}
+
+ExpNonDec = {
+  ExpBin ~ ":=" ~ Exp
+  //| "assert" <exp_nest>
+  //| "async" <exp_nest>
+  //| "await" <exp_nest>
+  //| "break" <id> <exp_nullary>?
+  //| "continue" <id>
+  //| "debug" <exp_nest>
+  //| "do" ~ "?" ~ <block>
+  //| "do" <block>
+  //| "for" "(" <pat> "in" <exp> ")" <exp_nest>
+  //| "if" <exp_nullary> <exp_nest>
+  //| "if" <exp_nullary> <exp_nest> "else" <exp_nest>
+  //| "ignore" <exp_nest>
+  //| "label" <id> (":" <typ>)? <exp_nest>
+  //| "loop" <exp_nest>
+  //| "loop" <exp_nest> "while" <exp_nest>
+  | "return" ~ Exp
+  //| "switch" <exp_nullary> "{" <list(<case>, ";")> "}"
+  //| "throw" <exp_nest>
+  //| "try" <exp_nest> <catch>
+  //| "while" <exp_nullary> <exp_nest>
+  | ExpBin ~ ":=" ~ Exp
+  | ExpBin ~ BinAssign ~ Exp
+  | ExpBin
+  //TODO
+}
+
+BinAssign = @{
+  "%="
+  | "&="
+  | "*%="
+  | "**%="
+  | "**-"
+  | "*="
+  | "+%="
+  | "+="
+  | "-%="
+  | "-="
+  | "/="
+  | "<<="
+  | "<<>="
+  | "<>>="
+  | ">>="
+  | "@="
+  | "^="
+  | "|="
+}
+
+ExpUn = {
+    "?" ~ ExpUn
+    | "actor" ~ ExpPlain
+    | "not" ~ ExpUn
+    | "debug_show" ~ ExpUn
+    | "to_candid" ~ ExpList
+    | "from_candid" ~ ExpUn
+    | "#" ~ Id ~ ExpNullary?
+    | UnOp ~ ExpUn
+    | UnAssign ~ ExpUn
+    | ExpPost
+}
+
+ExpPost = {
+  ("[" ~ "var"? ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)*)? ~ "]"
+  | ExpNullary
+  )
+  ~ ( ExpPost
+    | "[" ~ Exp ~ "]"
+    | "." ~ Nat
+    | "." ~ Id
+    | ("<" ~ /*List*/(Type ~("," ~ Type)*)? ~ ">")? ~ ExpNullary
+    | BANG
+  )?
+}
+
+BANG = @{ "!" }
+
+ExpNullary = {
+  ExpObj | ExpPlain | Id
+}
+
+ExpObj = {
+  "{" ~ /*List*/(ExpField ~ (";" ~ ExpField)*)? ~ "}"
+}
+
+ExpField = {
+  "var"? ~ Id ~ (":" ~Type)? ~ ("=" ~ Exp)?
+}
+
+UnAssign = { "+=" | "-=" | "^=" }
+
+ExpList = {
+  "(" ~ /*List*/ (Exp ~ ("," ~ Exp)*)? ~ ")"
+}
+
+ExpPlain = {
+  ExpList
+  | Lit
+}
+
+ExpBin = {
+  ExpUn ~ (
+    "and" ~ ExpBin
+    | "or" ~ ExpBin
+    | ":" ~ ExpBin
+    | BinOp ~ ExpBin
+    //| RelOp ~ ExpBin
+  )?
+}
+
+BinOp = {
+    "+"
+    | "#"
+    | "%"
+    | "&"
+    | "*"
+    | "*%"
+    | "**%"
+    | "**"
+    | "+%"
+    | "-%"
+    | "-"
+    | "/"
+    | "<<>"
+    | "<<"
+    | "<>>"
+    | ">>" /* can't match leading space */
+    | "^"
+    | "|"
+}

@@ -1,6 +1,5 @@
 use crate::motoko_parser::{Node, NodeType};
 use dprint_core::formatting::*;
-use std::rc::Rc;
 
 pub fn count_lines(s: &String) -> usize {
     s.matches("\n").count()
@@ -14,10 +13,6 @@ pub fn gen_newlines(n: usize) -> PrintItems {
     }
 
     items
-}
-
-pub fn is_last(v: &Vec<Node>, n: usize) -> bool {
-    v.len() == n + 1
 }
 
 pub fn has_child(node: &Node, t: NodeType) -> bool {

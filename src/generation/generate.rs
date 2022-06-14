@@ -6,6 +6,7 @@ use super::helper::*;
 use crate::configuration::Configuration;
 use crate::motoko_parser::{Node, NodeType};
 
+#[cfg(debug_assertions)]
 pub fn generate(nodes: &Vec<Node>, text: &str, config: &Configuration) -> PrintItems {
     let mut context = Context::new(text, config);
     let mut items = PrintItems::new();
@@ -14,6 +15,16 @@ pub fn generate(nodes: &Vec<Node>, text: &str, config: &Configuration) -> PrintI
     println!("{}", "#".repeat(40));
     println!("{}", items.get_as_text());
     println!("{}", "#".repeat(40));
+    items
+}
+
+#[cfg(not(debug_assertions))]
+pub fn generate(nodes: &Vec<Node>, text: &str, config: &Configuration) -> PrintItems {
+    let mut context = Context::new(text, config);
+    let mut items = PrintItems::new();
+
+    items.extend(gen_nodes(nodes, &mut context));
+
     items
 }
 
@@ -124,7 +135,7 @@ fn gen_id_trim(node: &Node, _context: &mut Context) -> PrintItems {
     items
 }
 
-fn gen_id_multiline(node: &Node, context: &mut Context) -> PrintItems {
+fn gen_id_multiline(node: &Node, _context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     let lines = node.original.clone();
     // optional '\r' at line end is removed by trim_end
@@ -269,7 +280,7 @@ fn gen_declaration(node: &Node, context: &mut Context) -> PrintItems {
     items.push_str(";");
     items.push_signal(Signal::FinishNewLineGroup);
 
-    for (i, n) in node.children.iter().enumerate().skip(semicolon) {
+    for n in node.children.iter().skip(semicolon) {
         match n.node_type {
             _ => items.extend(gen_node(n, context)),
         }
@@ -325,8 +336,7 @@ fn gen_list(
 
 fn gen_pattern_field(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-    let count = node.children.len();
-    for (i, n) in node.children.iter().enumerate() {
+    for n in node.children.iter() {
         match n.node_type {
             NodeType::Type => {
                 items.push_str(":");
