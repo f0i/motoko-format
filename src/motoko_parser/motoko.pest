@@ -64,9 +64,10 @@ Program = {
 }
 
 
-CompleteImport = ${ Import ~ C ~ Semicolon ~ ShouldNewline }
+CompleteImport = { Import ~ EndOfImport }
+EndOfImport = ${Semicolon ~ ShouldNewline}
 
-CompleteDeclaration = ${
+CompleteDeclaration = {
   Declaration ~ C
   // Last Semicolon is optional
   ~ (Semicolon | EOI)

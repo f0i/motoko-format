@@ -64,6 +64,9 @@ make_node_types! {
     Lit,
     ShouldNewline,
     C,
+    EndOfImport,
+    PatternField,
+    Pattern,
 }
 
 #[derive(Debug, Clone)]

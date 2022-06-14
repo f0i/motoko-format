@@ -1,4 +1,5 @@
 use dprint_core::formatting::*;
+use std::rc::Rc;
 
 use super::context::Context;
 use super::helper::*;
@@ -23,6 +24,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
     items.extend(match &node.node_type {
         NodeType::Program => gen_nodes(&node.children, context),
         NodeType::CompleteImport => gen_nodes(&node.children, context),
+        NodeType::EndOfImport => gen_nodes(&node.children, context),
         NodeType::CompleteDeclaration => gen_declaration(&node, context),
         NodeType::Import => gen_import(&node, context),
         NodeType::Id => gen_id(&node, context),
@@ -63,7 +65,6 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
 fn gen_nodes<'a>(nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-
     for node in nodes {
         items.extend(gen_node(node, context));
     }
@@ -92,12 +93,6 @@ fn gen_import(node: &Node, context: &mut Context) -> PrintItems {
 
     items.push_str(";");
     items.push_signal(Signal::FinishNewLineGroup);
-    items.push_signal(Signal::NewLine);
-
-    //if let Some(value) = &node.value {
-    //  items.push_str("=");
-    //  items.extend(gen_node(value.into(), context));
-    //}
 
     items
 }
@@ -147,6 +142,16 @@ fn gen_ignore(_node: &Node, _context: &mut Context) -> PrintItems {
 
 fn gen_comment_line(pre: &str, node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
+    items.push_condition(conditions::if_true(
+        "endLineText",
+        Rc::new(|context| Some(context.writer_info.column_number > 0)),
+        {
+            let mut items = PrintItems::new();
+            items.push_signal(Signal::SpaceIfNotTrailing);
+            items.push_signal(Signal::SpaceIfNotTrailing);
+            items
+        },
+    ));
     if context.inline_comment {
         items.push_signal(Signal::SpaceIfNotTrailing);
         items.push_signal(Signal::SpaceIfNotTrailing);
