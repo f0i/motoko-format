@@ -1,0 +1,24 @@
+== should format ==
+import a = "x.mo";
+import b = "x.mo";
+
+import c = "x.mo";
+
+
+import d = "x.mo";
+
+
+
+import e = "x.mo";
+
+[expect]
+import a = "x.mo";
+import b = "x.mo";
+
+import c = "x.mo";
+
+
+import d = "x.mo";
+
+
+import e = "x.mo";

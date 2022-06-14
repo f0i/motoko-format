@@ -1,4 +1,4 @@
-use crate::motoko_parser::Node;
+use crate::motoko_parser::{Node, NodeType};
 use dprint_core::formatting::*;
 
 pub fn count_lines(s: &String) -> usize {
@@ -16,5 +16,31 @@ pub fn gen_newlines(n: usize) -> PrintItems {
 }
 
 pub fn is_last(v: &Vec<Node>, n: usize) -> bool {
-    v.iter().count() == n + 1
+    v.len() == n + 1
+}
+
+pub fn has_child(node: &Node, t: NodeType) -> bool {
+    for n in node.children.iter() {
+        if n.node_type == t {
+            return true;
+        }
+    }
+    false
+}
+
+pub fn is_whitespace_or_comment(node: &Node) -> bool {
+    match node.node_type {
+        NodeType::WHITESPACE => true,
+        NodeType::Comment => true,
+        _ => false,
+    }
+}
+
+pub fn is_ignored(node: &Node) -> bool {
+    match node.node_type {
+        NodeType::WHITESPACE => true,
+        NodeType::Semicolon => true,
+        NodeType::EOI => true,
+        _ => false,
+    }
 }

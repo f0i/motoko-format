@@ -40,6 +40,7 @@ macro_rules! make_node_types {
 }
 
 make_node_types! {
+    Header,
     Program,
     CompleteImport,
     CompleteDeclaration,
@@ -47,6 +48,7 @@ make_node_types! {
     LineComment,
     DocComment,
     BlockComment,
+    SpacedComment,
     PatternPlain,
     PatternNullary,
     EOI,
@@ -63,10 +65,11 @@ make_node_types! {
     Declaration,
     Lit,
     ShouldNewline,
-    C,
     EndOfImport,
+    EndOfDeclaration,
     PatternField,
     Pattern,
+    Type,
 }
 
 #[derive(Debug, Clone)]

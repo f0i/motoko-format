@@ -5,10 +5,7 @@ EOL = _{ !(!NEWLINE) | EOI }
 
 WHITESPACE = @{ ( space | NEWLINE )+ }
 COMMENT = @{ Comment }
-C = ${ (WHITESPACE | Comment)* }
-
-ShouldNewline = { C }
-
+ShouldNewline = ${ (WHITESPACE | Comment)* }
 
 // Lit
 Lit = ${ Float | Nat | Char | Text }
@@ -43,7 +40,8 @@ Text = @{ "\"" ~ (!"\"" ~ Character)* ~ "\"" } // TODO: check "'" and '"' and ''
 Id = @{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
 
 // comments
-Comment = ${ ( DocComment | LineComment | BlockComment ) }
+Comment = ${ ( DocComment | LineComment | BlockComment ) ~ SpacedComment? }
+SpacedComment = ${ WHITESPACE? ~ Comment }
 DocComment = ${ ("/// " ~ DocCommentContent ~ EOL)+ }
 LineComment = ${ "//"  ~ LineCommentContent ~ EOL }
 BlockComment = ${ "/*" ~ " "? ~ BlockCommentContent ~ "*/" }
@@ -55,7 +53,12 @@ BlockCommentContent = @{
 
 // Syntax from grammar.txt
 Motoko = {
-  SOI ~ Program ~ EOI
+  Header ~ Program ~ EOI
+}
+Header = ${
+  SOI
+  ~ WHITESPACE*
+  ~ (Comment ~ ShouldNewline)?
 }
 Program = {
   //List
@@ -65,20 +68,20 @@ Program = {
 
 
 CompleteImport = { Import ~ EndOfImport }
-EndOfImport = ${Semicolon ~ ShouldNewline}
-
-CompleteDeclaration = {
-  Declaration ~ C
-  // Last Semicolon is optional
-  ~ (Semicolon | EOI)
+EndOfImport = ${ Semicolon ~ ShouldNewline }
+EndOfDeclaration = ${
+  ( Semicolon | EOI )
   ~ ShouldNewline
 }
+
+CompleteDeclaration = { Declaration ~ EndOfDeclaration }
 
 
 InvalidPart = { (!";" ~ ANY)+ ~ ";"?}
 
 Semicolon = @{ ";" }
 EqualSign = @{ "=" }
+Colon = @{ ";" }
 
 // Imports
 Import = { "import" ~ PatternNullary ~ EqualSign? ~ Text }

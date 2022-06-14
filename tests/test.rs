@@ -9,11 +9,35 @@ use dprint_plugin_motoko::configuration::resolve_config;
 use dprint_plugin_motoko::*;
 
 #[test]
+fn test_wip() {
+    test_specs_in("tests/specs/wip");
+}
+
+#[test]
+fn test_imports() {
+    test_specs_in("tests/specs/imports");
+}
+
+#[test]
+fn test_comments() {
+    test_specs_in("tests/specs/comments");
+}
+
+#[test]
+fn test_declarations() {
+    test_specs_in("tests/specs/declarations");
+}
+
+#[test]
 fn test_specs() {
+    test_specs_in("tests/specs");
+}
+
+fn test_specs_in(path: &str) {
     let global_config = resolve_global_config(ConfigKeyMap::new(), &Default::default()).config;
 
     run_specs(
-        &PathBuf::from("./tests/specs/simple"),
+        &PathBuf::from(path),
         &ParseSpecOptions {
             default_file_name: "file.mo",
         },

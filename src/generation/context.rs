@@ -8,7 +8,6 @@ pub struct Context<'a> {
     pub config: &'a Configuration,
     pub text: &'a str,
     // true if the comment is inline after other code
-    pub inline_comment: bool,
     pub handled_comments: HashSet<usize>,
     current_node: Option<Node>,
     parent_stack: Vec<Node>,
@@ -20,7 +19,6 @@ impl<'a> Context<'a> {
         Self {
             config,
             text,
-            inline_comment: false,
             handled_comments: HashSet::new(),
             current_node: None,
             parent_stack: Vec::new(),

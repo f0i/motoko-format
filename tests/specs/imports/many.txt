@@ -30,9 +30,10 @@ import List "mo:base/List:";
 import Sequence "mo:collections/List";
 import L "mo:base/List";
 
+
 [expect]
 import List = "mo:ListLib";
-import asdf = "a.mo"; // with comment
+import asdf = "a.mo";  // with comment
 
 // from https://internetcomputer.org/docs/current/developer-docs/build/languages/motoko/modules-and-imports/
 
@@ -40,7 +41,7 @@ import Array "mo:base/Array";
 import Result "mo:base/Result";
 
 // TODO: open issue: wrong separator in docs!
-//import { map, find, foldLeft = fold } = "mo:base/Array";
+// import { map, find, foldLeft = fold } = "mo:base/Array";
 import { map; find; foldLeft = fold } = "mo:base/Array";
 
 import Types "types";

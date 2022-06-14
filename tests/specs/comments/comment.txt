@@ -11,8 +11,10 @@
 /*
 */
 
-123;  //   comment after Lit
-123  //   comment before semicolon
+import i "x.mo";
+/* block */
+import a "x.mo";  //   comment after Lit
+import b "x.mo"  //   comment before semicolon
 ;
 
 [expect]
@@ -26,7 +28,9 @@
    with spaces */
 /*  */
 /*
-*/
+ */
 
-123;  // comment after Lit
-123;  // comment before semicolon
+import i "x.mo";
+/* block */
+import a "x.mo";  // comment after Lit
+import b "x.mo";  // comment before semicolon
