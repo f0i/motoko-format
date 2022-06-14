@@ -80,6 +80,8 @@ fn gen_import(node: &Node, context: &mut Context) -> PrintItems {
     items.push_signal(Signal::StartNewLineGroup);
     items.push_str("import");
     items.push_signal(Signal::SpaceIfNotTrailing);
+    items.push_signal(Signal::StartIndent);
+    items.push_signal(Signal::StartIndent);
 
     for n in node.children.iter() {
         match n.node_type {
@@ -96,6 +98,8 @@ fn gen_import(node: &Node, context: &mut Context) -> PrintItems {
     }
 
     items.push_str(";");
+    items.push_signal(Signal::FinishIndent);
+    items.push_signal(Signal::FinishIndent);
     items.push_signal(Signal::FinishNewLineGroup);
 
     items

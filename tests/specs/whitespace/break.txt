@@ -1,0 +1,15 @@
+== should format ==
+import a = // break
+
+ "x.mo";
+
+import b // break
+=
+ "x.mo";
+
+[expect]
+import a =   // break
+    "x.mo";
+
+import b   // break
+    = "x.mo";

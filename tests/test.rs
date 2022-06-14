@@ -29,6 +29,11 @@ fn test_declarations() {
 }
 
 #[test]
+fn test_whitespaces() {
+    test_specs_in("tests/specs/whitespace");
+}
+
+#[test]
 fn test_specs() {
     test_specs_in("tests/specs");
 }
