@@ -1,0 +1,5 @@
+== should format ==
+import i ""; ///    doc
+
+[expect]
+import i "";  /// doc

@@ -1,0 +1,9 @@
+== should format ==
+import F = "file.mo"; // c
+//   b  
+  //   c  
+
+[expect]
+import F = "file.mo";  // c
+// b
+// c
