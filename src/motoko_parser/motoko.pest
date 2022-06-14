@@ -61,7 +61,6 @@ Header = ${
   ~ (Comment ~ ShouldNewline)?
 }
 Program = {
-  //List
   CompleteImport*
   ~ CompleteDeclaration*
 }
@@ -86,7 +85,7 @@ Colon = @{ ";" }
 // Imports
 Import = { "import" ~ PatternNullary ~ EqualSign? ~ Text }
 PatternNullary = {
-  "{" ~ /*List*/ (PatternField  ~ (Semicolon ~ PatternField)*)? ~ "}"
+  "{" ~ /*List*/ (PatternField  ~ (Semicolon ~ PatternField)* ~ Semicolon?)? ~ "}"
   | PatternPlain
 }
 PatternField = {
@@ -98,7 +97,7 @@ PatternBin = {
 }
 PatternPlain = {
   "_"
-  | "(" ~ /*List*/(PatternField ~ (";" ~ PatternField)*)? ~ ")"
+  | "(" ~ /*List*/(PatternField ~ (";" ~ PatternField)* ~ ";"?)? ~ ")"
   | Lit
   | Id
 }
@@ -118,7 +117,7 @@ Type = {
 }
 
 TypeNoBin = {
-    FuncSortOpt ~ ("<" ~/*List*/(TypeBind ~ ("," ~ TypeBind)*)? ~ ">")? ~ TypeUn ~ "->" ~ TypeNoBin
+    FuncSortOpt ~ ("<" ~/*List*/(TypeBind ~ ("," ~ TypeBind)* ~ ","?)? ~ ">")? ~ TypeUn ~ "->" ~ TypeNoBin
     | TypePre
 }
 
@@ -140,7 +139,7 @@ TypeUn = {
 }
 
 TypeNullary = {
-    "(" ~ /*List*/(TypeItem ~ ("," ~ TypeItem)*)? ~ ")"
+    "(" ~ /*List*/(TypeItem ~ ("," ~ TypeItem)* ~ ","?)? ~ ")"
     | "[" ~ "var"? ~ Type ~ "]"
     //TODO: | <typ_variant>
     //TODO: | <typ_obj>
@@ -149,11 +148,11 @@ TypeNullary = {
 TypeItem = { (Id ~ ":")? ~ Type }
 
 TypeArgs = {
-  "<" ~ /*List*/(Type ~ ("," ~ Type)*)? ~ ">"
+  "<" ~ /*List*/(Type ~ ("," ~ Type)* ~ ","?)? ~ ">"
 }
 
 TypObj = {
-    "{" ~ /*List*/(TypeField ~ (";" ~ TypeField)*)? ~ "}"
+    "{" ~ /*List*/(TypeField ~ (";" ~ TypeField)* ~ ";"?)? ~ "}"
 } 
 
 TypeField = {
@@ -162,7 +161,7 @@ TypeField = {
 }
 
 TypeBindList = {
-  "<" ~ /*List*/(TypeBind ~ ("," ~  TypeBind)*)? ~ ">"
+  "<" ~ /*List*/(TypeBind ~ ("," ~  TypeBind)* ~ ","?)? ~ ">"
 }
 
 Declaration = {
@@ -196,11 +195,15 @@ FuncBody = {
 }
 
 Block = {
-  "{" ~ /*List*/(Declaration ~ (";" ~ Declaration)*)? ~ "}"
+  "{"
+  ~ /*List*/(Declaration ~ (";" ~ Declaration)* ~ ";"?)?
+  ~ "}"
 }
 
 ObjBody = {
-  "{" ~ /*List*/(DeclarationField ~ (";" ~ DeclarationField)*)? ~ "}"
+  "{"
+  ~ /*List*/(DeclarationField ~ (";" ~ DeclarationField)* ~ ";"?)?
+  ~ "}"
 }
 DeclarationField = { Visibility ~ Stability ~ Declaration }
 Visibility = {
@@ -283,14 +286,16 @@ ExpUn = {
 }
 
 ExpPost = {
-  ("[" ~ "var"? ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)*)? ~ "]"
+  ("[" ~ "var"?
+  ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ";"?)?
+  ~ "]"
   | ExpNullary
   )
   ~ ( ExpPost
     | "[" ~ Exp ~ "]"
     | "." ~ Nat
     | "." ~ Id
-    | ("<" ~ /*List*/(Type ~("," ~ Type)*)? ~ ">")? ~ ExpNullary
+    | ("<" ~ /*List*/(Type ~("," ~ Type)* ~ ","?)? ~ ">")? ~ ExpNullary
     | BANG
   )?
 }
@@ -302,7 +307,7 @@ ExpNullary = {
 }
 
 ExpObj = {
-  "{" ~ /*List*/(ExpField ~ (";" ~ ExpField)*)? ~ "}"
+  "{" ~ /*List*/(ExpField ~ (";" ~ ExpField)* ~ ";"?)? ~ "}"
 }
 
 ExpField = {
@@ -312,7 +317,7 @@ ExpField = {
 UnAssign = { "+=" | "-=" | "^=" }
 
 ExpList = {
-  "(" ~ /*List*/ (Exp ~ ("," ~ Exp)*)? ~ ")"
+  "(" ~ /*List*/(Exp ~ ("," ~ Exp)* ~ ","?)? ~ ")"
 }
 
 ExpPlain = {
