@@ -20,7 +20,6 @@ pub fn generate(nodes: &Vec<Node>, text: &str, config: &Configuration) -> PrintI
 fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
 
-    context.set_current_node(node.clone());
     items.extend(match &node.node_type {
         NodeType::Header => gen_nodes(&node.children, context),
         NodeType::Program => gen_nodes(&node.children, context),
@@ -63,7 +62,6 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
             i
         }
     });
-    context.pop_current_node();
     items
 }
 
@@ -88,16 +86,22 @@ fn gen_import(node: &Node, context: &mut Context) -> PrintItems {
             NodeType::PatternNullary => {
                 items.extend(gen_node(n, context));
                 items.push_signal(Signal::SpaceOrNewLine);
+                context.expect_space = true;
+                println!("þ set expect_space");
             }
             NodeType::EqualSign => {
                 items.extend(gen_node(n, context));
                 items.push_signal(Signal::SpaceIfNotTrailing);
+                context.expect_space = true;
+                println!("þ set expect_space");
             }
             _ => items.extend(gen_node(n, context)),
         }
     }
 
     items.push_str(";");
+    context.expect_space = false;
+    println!("þ reset expect_space");
     items.push_signal(Signal::FinishIndent);
     items.push_signal(Signal::FinishIndent);
     items.push_signal(Signal::FinishNewLineGroup);
@@ -150,17 +154,16 @@ fn gen_ignore(_node: &Node, _context: &mut Context) -> PrintItems {
 
 fn gen_comment_line(pre: &str, node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
+    println!("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy {:?}{:?}", context, node);
+    let spaces = if context.expect_space {
+        gen_spaces(1)
+    } else {
+        gen_spaces(2)
+    };
     items.push_condition(conditions::if_true(
         "endLineText",
         Rc::new(|context| Some(context.writer_info.column_number > 0)),
-        {
-            // https://internetcomputer.org/docs/current/developer-docs/build/languages/motoko/style/#comments
-            // "[...] at the end of the line, separated by at least 2 spaces."
-            let mut items = PrintItems::new();
-            items.push_signal(Signal::SpaceIfNotTrailing);
-            items.push_signal(Signal::SpaceIfNotTrailing);
-            items
-        },
+        spaces,
     ));
     items.push_str(pre);
     items.push_signal(Signal::SpaceIfNotTrailing);
@@ -190,7 +193,10 @@ fn gen_comment_block(node: &Node, context: &mut Context) -> PrintItems {
         {
             // inline block comments only with one space
             let mut items = PrintItems::new();
-            items.push_signal(Signal::SpaceIfNotTrailing);
+            if !context.expect_space {
+                items.push_signal(Signal::SpaceIfNotTrailing);
+            }
+            context.expect_space = false;
             items
         },
     ));
@@ -331,7 +337,11 @@ fn gen_pattern_field(node: &Node, context: &mut Context) -> PrintItems {
                 items.push_signal(Signal::SpaceIfNotTrailing);
                 items.push_str("=");
                 items.push_signal(Signal::SpaceIfNotTrailing);
+                context.expect_space = true;
+                println!("þ set expect_space");
                 items.extend(gen_node(n, context));
+                println!("þ reset expect_space");
+                context.expect_space = false;
             }
 
             _ => {

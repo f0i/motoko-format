@@ -1,15 +1,25 @@
 == should format ==
-import a = // break
+import a = // break1
 
  "x.mo";
 
-import b // break
+import b // break2
 =
  "x.mo";
 
-[expect]
-import a =   // break
+import a =   /* break3 */
     "x.mo";
 
-import b   // break
+import b   /* break4 */
     = "x.mo";
+
+[expect]
+import a =  // break1
+    "x.mo";
+
+import b  // break2
+    = "x.mo";
+
+import a = /* break3 */ "x.mo";
+
+import b /* break4 */ = "x.mo";

@@ -1,5 +1,6 @@
 use crate::motoko_parser::{Node, NodeType};
 use dprint_core::formatting::*;
+use std::rc::Rc;
 
 pub fn count_lines(s: &String) -> usize {
     s.matches("\n").count()
@@ -43,4 +44,12 @@ pub fn is_ignored(node: &Node) -> bool {
         NodeType::EOI => true,
         _ => false,
     }
+}
+
+pub fn gen_spaces(n: usize) -> PrintItems {
+    let mut items = PrintItems::new();
+    for _ in 0..n {
+        items.push_signal(Signal::SpaceIfNotTrailing);
+    }
+    items
 }

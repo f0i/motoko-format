@@ -1,17 +1,4 @@
 == should format ==
-import a = "x.mo";
-import b = "x.mo";
-
-import c = "x.mo";
-
-
-import d = "x.mo";
-
+123
 [expect]
-import a = "x.mo";
-import b = "x.mo";
-
-import c = "x.mo";
-
-
-import d = "x.mo";
+123;

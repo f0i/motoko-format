@@ -2,7 +2,7 @@ use dprint_core::configuration::NewLineKind;
 use serde::Deserialize;
 use serde::Serialize;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
     pub line_width: u32,

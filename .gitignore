@@ -6,4 +6,4 @@
 # reference projects
 /sample_project
 /pest
-/dprint-plugin-*
+/dprint*
