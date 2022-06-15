@@ -70,6 +70,8 @@ make_node_types! {
     PatternField,
     Pattern,
     Type,
+    DeclarationNonVar,
+    ExpNonDec,
 }
 
 #[derive(Debug, Clone)]

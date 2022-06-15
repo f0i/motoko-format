@@ -125,7 +125,7 @@ FuncSortOpt = { "shared" ~ (space ~ "query")? | "query"?}
 
 TypePre = {
     "async" ~ TypePre
-    | ObjSort ~ TypObj
+    | ObjSort ~ TypeObj
     | TypeUn
 } 
 
@@ -141,17 +141,26 @@ TypeUn = {
 TypeNullary = {
     "(" ~ /*List*/(TypeItem ~ ("," ~ TypeItem)* ~ ","?)? ~ ")"
     | "[" ~ "var"? ~ Type ~ "]"
-    //TODO: | <typ_variant>
-    //TODO: | <typ_obj>
+    | TypeVariant
+    | TypeObj
     | Id ~ ("." ~ Id)* ~ TypeArgs?
+    //TODO
 } 
 TypeItem = { (Id ~ ":")? ~ Type }
+
+TypeVariant = {
+    "{" ~ "#" ~ "}"
+    | "{" ~ /*List1*/(TypeTag ~ (";" ~ TypeTag)* ~ ";"?) ~ "}"
+}
+TypeTag = {
+  "#" ~ Id ~ (":" ~ Type)?
+}
 
 TypeArgs = {
   "<" ~ /*List*/(Type ~ ("," ~ Type)* ~ ","?)? ~ ">"
 }
 
-TypObj = {
+TypeObj = {
     "{" ~ /*List*/(TypeField ~ (";" ~ TypeField)* ~ ";"?)? ~ "}"
 } 
 

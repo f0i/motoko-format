@@ -44,7 +44,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         NodeType::WHITESPACE => gen_ignore(&node, context),
         NodeType::PatternNullary => gen_pattern_nullary(&node, context),
         NodeType::PatternPlain => gen_nodes(&node.children, context),
-        NodeType::Pattern => gen_id(&node, context), // TODO
+        NodeType::Pattern => gen_id_trim(&node, context), // TODO
         NodeType::Text => gen_id(&node, context),
         NodeType::Semicolon => gen_ignore(&node, context),
         NodeType::EOI => gen_ignore(&node, context),
@@ -61,6 +61,8 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         NodeType::Lit => gen_id(&node, context),
         NodeType::ShouldNewline => gen_should_newline(&node, context),
         NodeType::PatternField => gen_pattern_field(&node, context),
+        NodeType::DeclarationNonVar => gen_id_trim(&node, context), // TODO
+        NodeType::ExpNonDec => gen_id_trim(&node, context),         // TODO
 
         // TODO: remove to handle all cases
         _ => {
@@ -124,14 +126,27 @@ fn gen_import(node: &Node, context: &mut Context) -> PrintItems {
 fn gen_id(node: &Node, _context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     // TODO? check & handle line breaks
-    items.push_string(node.original.clone());
+    let mut first = true;
+    for l in node.original.split("\n") {
+        if !first {
+            items.push_signal(Signal::NewLine);
+        }
+        first = false;
+        items.push_str(l);
+    }
     items
 }
 
 fn gen_id_trim(node: &Node, _context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-    // TODO? check & handle line breaks
-    items.push_str(node.original.trim());
+    let mut first = true;
+    for l in node.original.trim().split("\n") {
+        if !first {
+            items.push_signal(Signal::NewLine);
+        }
+        first = false;
+        items.push_str(l);
+    }
     items
 }
 
@@ -292,7 +307,7 @@ fn gen_declaration(node: &Node, context: &mut Context) -> PrintItems {
 fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
 
-    if has_child(&node, NodeType::Semicolon) {
+    if has_child(&node, NodeType::PatternField) {
         items.extend(gen_list("{", ";", "}", &node.children, context));
     } else {
         items.extend(gen_nodes(&node.children, context))
@@ -327,7 +342,7 @@ fn gen_list(
             items.extend(gen_node(n, context));
         }
     }
-
+    items.push_signal(Signal::SpaceIfNotTrailing);
     items.push_str(end);
     items.push_signal(Signal::FinishNewLineGroup);
 
