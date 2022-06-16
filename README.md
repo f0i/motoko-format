@@ -2,7 +2,6 @@
 
 A code formatter for the Motoko programming language.
 
-
 ## :warning: Risks and Disclaimer
 
 This formatter is in early development!
@@ -13,8 +12,7 @@ This formatter is in early development!
 > But we are headed west! This is the frontier.
 > It's not for everyone, but we're glad you're with us.
 
-
-## Usage
+## Installation
 
 The development version can be used as a plugin for [dprint](https://dprint.dev/).
 
@@ -27,21 +25,26 @@ Edit this `dprint.json` file to include include the Motoko plugin:
 
 ```json
 {
-  "markdown": {
-    // Motoko formatter config goes here
-  },
-  "includes": [
-    "**/*.{mo}"
-  ],
-  "excludes": [
-      // excluded files
-  ],
+  "includes": ["**/*.{mo}"],
+  "excludes": [],
   "plugins": [
-    "TODO: Link to wasm file"
+    "https://gitlab.com/f0i/motoko-formater/-/jobs/artifacts/main/raw/release/dprint_plugin_motoko.wasm?job=release:cargo&file=plugin.wasm"
   ]
 }
 ```
 
+## VS Code Extension
+
+A Visual Studio Code extension is available for dprint:
+[Dprint Code Formatter](https://marketplace.visualstudio.com/items?itemName=dprint.dprint).
+
+Currently this still requires installation of the CLI as described above.
+
+## Update
+
+Dprint keeps a local copy of the Motoko plugin.
+Run `dprint clear-cache` to delete the local copy.
+This will force re-downloading of the plugin file.
 
 ## Development References
 
@@ -55,4 +58,4 @@ Edit this `dprint.json` file to include include the Motoko plugin:
 
 [Calculator parser example](https://createlang.rs/01_calculator/ast.html)
 
-[dprint (rust altrenative for prettier)](https://dprint.dev/plugin-dev/)
+[dprint (rust alternative for prettier)](https://dprint.dev/plugin-dev/)
