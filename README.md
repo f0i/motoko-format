@@ -43,7 +43,7 @@ Edit this `dprint.json` file to include include the Motoko plugin:
 ```
 
 
-## References
+## Development References
 
 [Syntax description in motoko repo](https://github.com/dfinity/motoko/blob/master/doc/modules/language-guide/pages/language-manual.adoc)
 

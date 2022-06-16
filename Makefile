@@ -1,8 +1,19 @@
 help:
 	cat Makefile
 
-grammar.txt:
-	wget https://raw.githubusercontent.com/dfinity/motoko/master/doc/modules/language-guide/examples/grammar.txt
 
 clean:
-	rm -f grammar.txt
+	rm -rf ./release/
+
+test:
+	cargo test
+
+test-release:
+	cargo test --release
+
+build:
+	cargo build --target wasm32-unknown-unknown --features wasm --release
+
+release: build
+	mkdir -p release
+	cp target/wasm32-unknown-unknown/release/dprint_plugin_motoko.wasm ./release/
