@@ -1,0 +1,19 @@
+image: "rust:latest"
+
+before_script:
+    - apt-get update
+    - apt-get install build-essential
+    - rustc --version && cargo --version
+
+# run parser and formatter tests
+test:cargo:
+  script:
+    - make test
+
+# build plugin
+release:cargo:
+  script:
+    - make release
+  artifacts:
+    paths:
+      - release
