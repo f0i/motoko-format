@@ -1,4 +1,4 @@
 == should format ==
-123;
+asdf
 [expect]
-123;
+asdf;

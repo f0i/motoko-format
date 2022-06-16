@@ -32,6 +32,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
 
     items.extend(match &node.node_type {
+        NodeType::Motoko => gen_nodes(&node.children, context),
         NodeType::Header => gen_nodes(&node.children, context),
         NodeType::Program => gen_nodes(&node.children, context),
         NodeType::CompleteImport => gen_nodes(&node.children, context),
@@ -65,6 +66,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         NodeType::ExpNonDec => gen_id_trim(&node, context),         // TODO
 
         // TODO: remove to handle all cases
+        _ => gen_id(&node, context),
         _ => {
             let mut i = PrintItems::new();
             println!("TODO: generate dprint IR from {:?}", node);
@@ -96,6 +98,7 @@ fn gen_import(node: &Node, context: &mut Context) -> PrintItems {
 
     for n in node.children.iter() {
         match n.node_type {
+            NodeType::KeywordImport => {}
             NodeType::PatternNullary => {
                 items.extend(gen_node(n, context));
                 items.push_signal(Signal::SpaceOrNewLine);
@@ -358,6 +361,7 @@ fn gen_pattern_field(node: &Node, context: &mut Context) -> PrintItems {
                 items.push_signal(Signal::SpaceIfNotTrailing);
                 items.extend(gen_node(n, context));
             }
+            NodeType::EqualSign => {}
             NodeType::Pattern => {
                 items.push_signal(Signal::SpaceIfNotTrailing);
                 items.push_str("=");

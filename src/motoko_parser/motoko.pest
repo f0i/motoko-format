@@ -23,7 +23,7 @@ Float = @{
   | "0x" ~ HexNum ~ ("." ~ HexFrac?)? ~ ("p" | "P") ~ Sign? ~ Num
 }
 
-Escape = { "n" | "r" | "t" | "\\" | "\'" | "\"" }
+Escape = @{ "n" | "r" | "t" | "\\" | "\'" | "\"" }
 
 Character = @{ 
     "\\" ~ Escape
@@ -33,11 +33,11 @@ Character = @{
 }
 
 Char = @{ "'" ~ (!"'" ~ Character) ~ "'" }
-Text = @{ "\"" ~ (!"\"" ~ Character)* ~ "\"" } // TODO: check "'" and '"' and ''' and """ in motoko
+Text = @{ "\"" ~ (!"\"" ~ Character)* ~ "\"" }
 
-
-
-Id = @{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
+Id = @{ !Keyword ~ IdStart ~ IdContinue* }
+IdStart = @{ ASCII_ALPHA }
+IdContinue = @{ ASCII_ALPHANUMERIC | "_" }
 
 // comments
 Comment = ${ ( DocComment | LineComment | BlockComment ) ~ SpacedComment? }
@@ -76,28 +76,83 @@ EndOfDeclaration = ${
 CompleteDeclaration = { Declaration ~ EndOfDeclaration }
 
 
-InvalidPart = { (!";" ~ ANY)+ ~ ";"?}
+InvalidPart = { (!Semicolon ~ ANY)+ ~ Semicolon?}
 
 Semicolon = @{ ";" }
 EqualSign = @{ "=" }
-Colon = @{ ";" }
+Colon = @{ ":" }
+
+Keyword = @{
+    ("actor" | "and" | "assert" | "async" | "await" | "break" | "case" | "catch" | "class" | "continue" | "debug"
+    | "debug_show" | "do" | "else" | "flexible" | "false" | "for" | "from_candid" | "func" | "if" | "ignore" | "import"
+    | "in" | "module" | "not" | "null" | "object" | "or" | "label" | "let" | "loop" | "private" | "public" | "query" | "return"
+    | "shared" | "stable" | "switch" | "system" | "throw" | "to_candid" | "true" | "try" | "type" | "var" | "while"
+    ) ~ !IdContinue
+}
+KeywordActor = @{"actor" ~ !IdContinue}
+KeywordAnd = @{"and" ~ !IdContinue}
+KeywordAssert = @{"assert" ~ !IdContinue}
+KeywordAsync = @{"async" ~ !IdContinue}
+KeywordAwait = @{"await" ~ !IdContinue}
+KeywordBreak = @{"break" ~ !IdContinue}
+KeywordCase = @{"case" ~ !IdContinue}
+KeywordCatch = @{"catch" ~ !IdContinue}
+KeywordClass = @{"class" ~ !IdContinue}
+KeywordContinue = @{"continue" ~ !IdContinue}
+KeywordDebug = @{"debug" ~ !IdContinue}
+KeywordDebugShow = @{"debug_show" ~ !IdContinue}
+KeywordDo = @{"do" ~ !IdContinue}
+KeywordElse = @{"else" ~ !IdContinue}
+KeywordFlexible = @{"flexible" ~ !IdContinue}
+KeywordFalse = @{"false" ~ !IdContinue}
+KeywordFor = @{"for" ~ !IdContinue}
+KeywordFromCandid = @{"from_candid" ~ !IdContinue}
+KeywordFunc = @{"func" ~ !IdContinue}
+KeywordIf = @{"if" ~ !IdContinue}
+KeywordIgnore = @{"ignore" ~ !IdContinue}
+KeywordImport = @{"import" ~ !IdContinue}
+KeywordIn = @{"in" ~ !IdContinue}
+KeywordModule = @{"module" ~ !IdContinue}
+KeywordNot = @{"not" ~ !IdContinue}
+KeywordNull = @{"null" ~ !IdContinue}
+KeywordObject = @{"object" ~ !IdContinue}
+KeywordOr = @{"or" ~ !IdContinue}
+KeywordLabel = @{"label" ~ !IdContinue}
+KeywordLet = @{"let" ~ !IdContinue}
+KeywordLoop = @{"loop" ~ !IdContinue}
+KeywordPrivate = @{"private" ~ !IdContinue}
+KeywordPublic = @{"public" ~ !IdContinue}
+KeywordQuery = @{"query" ~ !IdContinue}
+KeywordReturn = @{"return" ~ !IdContinue}
+KeywordShared = @{"shared" ~ !IdContinue}
+KeywordStable = @{"stable" ~ !IdContinue}
+KeywordSwitch = @{"switch" ~ !IdContinue}
+KeywordSystem = @{"system" ~ !IdContinue}
+KeywordThrow = @{"throw" ~ !IdContinue}
+KeywordToCandid = @{"to_candid" ~ !IdContinue}
+KeywordTrue = @{"true" ~ !IdContinue}
+KeywordTry = @{"try" ~ !IdContinue}
+KeywordType = @{"type" ~ !IdContinue}
+KeywordVar = @{"var" ~ !IdContinue}
+KeywordWhile = @{"while" ~ !IdContinue}
+
 
 // Imports
-Import = { "import" ~ PatternNullary ~ EqualSign? ~ Text }
+Import = { KeywordImport ~ PatternNullary ~ EqualSign? ~ Text }
 PatternNullary = {
   "{" ~ /*List*/ (PatternField  ~ (Semicolon ~ PatternField)* ~ Semicolon?)? ~ "}"
   | PatternPlain
 }
 PatternField = {
-  Id ~ (":" ~ Type)? ~ ("=" ~ Pattern)?
+  Id ~ (":" ~ Type)? ~ (EqualSign ~ Pattern)?
 }
 Pattern = { PatternBin }
 PatternBin = {
-  PatternUn ~ ("or" ~ PatternBin)* ~ (":" ~ Type)* 
+  PatternUn ~ (KeywordOr ~ PatternBin)* ~ (":" ~ Type)* 
 }
 PatternPlain = {
   "_"
-  | "(" ~ /*List*/(PatternField ~ (";" ~ PatternField)* ~ ";"?)? ~ ")"
+  | "(" ~ /*List*/(PatternField ~ (Semicolon ~ PatternField)* ~ Semicolon?)? ~ ")"
   | Lit
   | Id
 }
@@ -111,17 +166,20 @@ PatternUn = {
 UnOp = @{ "+" | "-" | "^" } 
 
 Type = {
-    TypeNoBin ~ "and" ~ Type
-    | TypeNoBin ~ "or" ~ Type
+    TypeNoBin ~ KeywordAnd ~ Type
+    | TypeNoBin ~ KeywordOr ~ Type
     | TypeNoBin
 }
 
 TypeNoBin = {
-    FuncSortOpt ~ ("<" ~/*List*/(TypeBind ~ ("," ~ TypeBind)* ~ ","?)? ~ ">")? ~ TypeUn ~ "->" ~ TypeNoBin
+    FuncSort? ~ ("<" ~/*List*/(TypeBind ~ ("," ~ TypeBind)* ~ ","?)? ~ ">")? ~ TypeUn ~ "->" ~ TypeNoBin
     | TypePre
 }
 
-FuncSortOpt = { "shared" ~ (space ~ "query")? | "query"?}
+FuncSort = {
+  KeywordShared ~ KeywordQuery?
+  | KeywordQuery
+}
 
 TypePre = {
     "async" ~ TypePre
@@ -129,7 +187,7 @@ TypePre = {
     | TypeUn
 } 
 
-ObjSort = { "object" | "actor" | "module" }
+ObjSort = { KeywordObject | KeywordActor | KeywordModule }
 
 TypeBind = { Id ~ ("<:" ~ Type)? }
 
@@ -144,14 +202,18 @@ TypeNullary = {
     | TypeVariant
     | TypeObj
     | Id ~ ("." ~ Id)* ~ TypeArgs?
-    //TODO
 } 
 TypeItem = { (Id ~ ":")? ~ Type }
 
 TypeVariant = {
     "{" ~ "#" ~ "}"
-    | "{" ~ /*List1*/(TypeTag ~ (";" ~ TypeTag)* ~ ";"?) ~ "}"
+    | "{" ~ /*List1*/(TypeTag ~ (Semicolon ~ TypeTag)* ~ Semicolon?) ~ "}"
 }
+
+TypeObj = {
+    "{" ~ /*List*/(TypeField ~ (Semicolon ~ TypeField)* ~ Semicolon?)? ~ "}"
+} 
+
 TypeTag = {
   "#" ~ Id ~ (":" ~ Type)?
 }
@@ -159,10 +221,6 @@ TypeTag = {
 TypeArgs = {
   "<" ~ /*List*/(Type ~ ("," ~ Type)* ~ ","?)? ~ ">"
 }
-
-TypeObj = {
-    "{" ~ /*List*/(TypeField ~ (";" ~ TypeField)* ~ ";"?)? ~ "}"
-} 
 
 TypeField = {
   "var"? ~ Id ~ ":" ~ Type
@@ -181,21 +239,36 @@ Declaration = {
 }
 
 DeclarationVar = {
-  "var" ~ Id ~ (":" ~ Type)? ~ "=" ~ Exp
+  "var" ~ Id ~ (":" ~ Type)? ~ EqualSign ~ Exp
 }
 
 DeclarationNonVar = {
   "let" ~ Pattern ~ "=" ~ Exp
-  | "type" ~ Id ~ TypeBindList? ~ "=" ~ Type
-  | ObjSort ~ Id? ~ "="? ~ ObjBody
-  | SharedPatternOpt ~ "func" ~ Id? ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
-  //TODO
+  | "type" ~ Id ~ TypeBindList? ~ EqualSign ~ Type
+  | ObjSort ~ Id? ~ EqualSign? ~ ObjBody
+  | SharedPattern? ~ "func" ~ Id? ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  | SharedPattern2? ~ "func" ~ Id? ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  | SharedPattern? ~ ObjSort? ~ "class" ~ Id?
+    ~ ("<" ~ /*List*/(TypeBind ~ ("," ~ TypeBind)*)? ~ ","? ~ ">")?
+    ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
+  | SharedPattern2? ~ ObjSort? ~ "class" ~ Id?
+    ~ ("<" ~ /*List*/(TypeBind ~ ("," ~ TypeBind)*)? ~ ","? ~ ">")?
+    ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
 }
 
-SharedPatternOpt = {
+ClassBody = {
+  (EqualSign ~ Id?)? ~ ObjBody
+}
+
+SharedPattern = {
     "shared" ~ "query"? ~ PatternPlain?
     | "query" ~ PatternPlain
-    | "query"?
+    | "query"
+}
+SharedPattern2 = {
+    "shared" ~ "query"?
+    | "query"
+    | "query"
 }
 
 FuncBody = {
@@ -205,26 +278,28 @@ FuncBody = {
 
 Block = {
   "{"
-  ~ /*List*/(Declaration ~ (";" ~ Declaration)* ~ ";"?)?
+  ~ /*List*/(Declaration ~ (Semicolon ~ Declaration)* ~ Semicolon?)?
   ~ "}"
 }
 
 ObjBody = {
   "{"
-  ~ /*List*/(DeclarationField ~ (";" ~ DeclarationField)* ~ ";"?)?
+  ~ /*List*/(DeclarationField ~ (Semicolon ~ DeclarationField)* ~ Semicolon?)?
   ~ "}"
 }
-DeclarationField = { Visibility ~ Stability ~ Declaration }
-Visibility = {
-    ("private" | "public" | "system")?
-}
-Stability = {
-  ("flexible" | "stable")?
-}
+DeclarationField = { Visibility? ~ Stability? ~ Declaration }
+Visibility = { "private" | "public" | "system" }
+Stability = { "flexible" | "stable" }
 
 Exp = {
-  DeclarationVar
+  ParenthesizedExp
+  | DeclarationVar
   | ExpNonVar
+}
+
+// https://github.com/dfinity/motoko/blob/master/doc/modules/language-guide/pages/language-manual.adoc#parentheses
+ParenthesizedExp = {
+  "(" ~ Exp ~ ")"
 }
 
 ExpNonVar = {
@@ -233,32 +308,37 @@ ExpNonVar = {
 }
 
 ExpNonDec = {
-  ExpBin ~ ":=" ~ Exp
-  //| "assert" <exp_nest>
-  //| "async" <exp_nest>
-  //| "await" <exp_nest>
-  //| "break" <id> <exp_nullary>?
-  //| "continue" <id>
-  //| "debug" <exp_nest>
-  //| "do" ~ "?" ~ <block>
-  //| "do" <block>
-  //| "for" "(" <pat> "in" <exp> ")" <exp_nest>
-  //| "if" <exp_nullary> <exp_nest>
-  //| "if" <exp_nullary> <exp_nest> "else" <exp_nest>
-  //| "ignore" <exp_nest>
-  //| "label" <id> (":" <typ>)? <exp_nest>
-  //| "loop" <exp_nest>
-  //| "loop" <exp_nest> "while" <exp_nest>
-  | "return" ~ Exp
-  //| "switch" <exp_nullary> "{" <list(<case>, ";")> "}"
-  //| "throw" <exp_nest>
-  //| "try" <exp_nest> <catch>
-  //| "while" <exp_nullary> <exp_nest>
+  "assert" ~ ExpNest
+  | "async" ~ ExpNest
+  | "await" ~ ExpNest
+  | "break" ~ Id ~ ExpNullary?
+  | "continue" ~ Id
+  | "debug" ~ ExpNest
+  | "do" ~ "?"? ~ Block
+  | "for" ~ "(" ~ Pattern ~ "in" ~ Exp ~ ")" ~ ExpNest
+  | "if" ~ ExpNullary ~ ExpNest ~ ("else" ~ ExpNest)?
+  | "ignore" ~ ExpNest
+  | "label" ~ Id ~ (":" ~ Type)? ~ ExpNest
+  | "loop" ~ ExpNest ~ ("while" ~ ExpNest)?
+  | KeywordReturn ~ Exp?
+  | "switch" ~ ExpNullary ~ "{" ~ /*List*/(Case ~ (Semicolon ~ Case)* ~ Semicolon)? ~ "}"
+  | "throw" ~ ExpNest
+  | "try" ~ ExpNest ~ Catch
+  | "while" ~ ExpNullary ~ ExpNest
   | ExpBin ~ ":=" ~ Exp
   | ExpBin ~ BinAssign ~ Exp
   | ExpBin
-  //TODO
 }
+
+Case = {
+  "case" ~ PatternNullary ~ ExpNest
+}
+
+Catch = {
+  "catch" ~ PatternNullary ~ ExpNest
+}
+
+ExpNest = { Block | Exp }
 
 BinAssign = @{
   "%="
@@ -281,6 +361,7 @@ BinAssign = @{
   | "|="
 }
 
+// Sample matches: Id, "[]"
 ExpUn = {
     "?" ~ ExpUn
     | "actor" ~ ExpPlain
@@ -294,29 +375,35 @@ ExpUn = {
     | ExpPost
 }
 
+// Sample matches: Id, "[]", "{" Id "}", "{}", Id Id Id
 ExpPost = {
   ("[" ~ "var"?
-  ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ";"?)?
+  ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
   ~ "]"
   | ExpNullary
   )
-  ~ ( ExpPost
-    | "[" ~ Exp ~ "]"
-    | "." ~ Nat
-    | "." ~ Id
-    | ("<" ~ /*List*/(Type ~("," ~ Type)* ~ ","?)? ~ ">")? ~ ExpNullary
-    | BANG
-  )?
+  ~ ExpPostContinue?
+  ~ ("(" ~ ExpPostContinue? ~ ")")? // TODO!: not in spec! check!
+}
+ExpPostContinue = {
+  ExpPost
+  | "[" ~ Exp ~ "]"
+  | "." ~ Nat
+  | "." ~ Id
+  | ("<" ~ /*List*/(Type ~("," ~ Type)* ~ ","?)? ~ ">")? ~ ExpNullary
+  | BANG
 }
 
 BANG = @{ "!" }
 
+// Sample matches: Id, "{" Id "}", "{}"
 ExpNullary = {
   ExpObj | ExpPlain | Id
 }
 
+// Sample matches "{" Id "}"
 ExpObj = {
-  "{" ~ /*List*/(ExpField ~ (";" ~ ExpField)* ~ ";"?)? ~ "}"
+  "{" ~ /*List*/(ExpField ~ (Semicolon ~ ExpField)* ~ Semicolon?)? ~ "}"
 }
 
 ExpField = {
@@ -340,8 +427,17 @@ ExpBin = {
     | "or" ~ ExpBin
     | ":" ~ ExpBin
     | BinOp ~ ExpBin
-    //| RelOp ~ ExpBin
+    | RelOp ~ ExpBin
   )?
+}
+
+RelOp = {
+  "=="
+  | "!="
+  | "< " // can't match leading spaces
+  | "<="
+  | "> " // can't match leading spaces
+  | ">="
 }
 
 BinOp = {

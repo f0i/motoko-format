@@ -7,4 +7,6 @@ use serde::Serialize;
 pub struct Configuration {
     pub line_width: u32,
     pub new_line_kind: NewLineKind,
+    // Maximum number of linebreaks between
+    //pub max_newlines: u32,
 }

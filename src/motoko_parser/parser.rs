@@ -40,6 +40,7 @@ macro_rules! make_node_types {
 }
 
 make_node_types! {
+    Motoko,
     Header,
     Program,
     CompleteImport,
@@ -72,6 +73,57 @@ make_node_types! {
     Type,
     DeclarationNonVar,
     ExpNonDec,
+    ClassBody,
+    DeclarationField,
+    Exp,
+    // Keywords
+    KeywordActor,
+    KeywordAnd,
+    KeywordAssert,
+    KeywordAsync,
+    KeywordAwait,
+    KeywordBreak,
+    KeywordCase,
+    KeywordCatch,
+    KeywordClass,
+    KeywordContinue,
+    KeywordDebug,
+    KeywordDebugShow,
+    KeywordDo,
+    KeywordElse,
+    KeywordFlexible,
+    KeywordFalse,
+    KeywordFor,
+    KeywordFromCandid,
+    KeywordFunc,
+    KeywordIf,
+    KeywordIgnore,
+    KeywordImport,
+    KeywordIn,
+    KeywordModule,
+    KeywordNot,
+    KeywordNull,
+    KeywordObject,
+    KeywordOr,
+    KeywordLabel,
+    KeywordLet,
+    KeywordLoop,
+    KeywordPrivate,
+    KeywordPublic,
+    KeywordQuery,
+    KeywordReturn,
+    KeywordShared,
+    KeywordStable,
+    KeywordSwitch,
+    KeywordSystem,
+    KeywordThrow,
+    KeywordToCandid,
+    KeywordTrue,
+    KeywordTry,
+    KeywordType,
+    KeywordVar,
+    KeywordWhile,
+    //
 }
 
 #[derive(Debug, Clone)]
@@ -80,9 +132,22 @@ pub struct Declaration {}
 pub fn parse(content: &str) -> std::result::Result<Vec<Node>, pest::error::Error<Rule>> {
     let mut ast = vec![];
     let mut pairs = MotokoParser::parse(Rule::Motoko, &content)?;
-    for pair in pairs.next().unwrap().into_inner() {
-        ast.push(Node::from_pair(pair))
-    }
+    let pair = pairs.next().unwrap();
+    ast.push(Node::from_pair(pair));
+
+    Ok(ast)
+}
+
+#[cfg(test)]
+fn parse_with(
+    content: &str,
+    rule: Rule,
+) -> std::result::Result<Vec<Node>, pest::error::Error<Rule>> {
+    let mut ast = vec![];
+    let mut pairs = MotokoParser::parse(rule, &content)?;
+    let pair = pairs.next().unwrap();
+    ast.push(Node::from_pair(pair));
+
     Ok(ast)
 }
 
@@ -114,6 +179,19 @@ impl Node {
             .map(|pair| Self::from_pair(pair))
             .collect()
     }
+
+    #[cfg(test)]
+    fn get_one_descendant(&self, node_type: &NodeType) -> Option<Node> {
+        if self.node_type == *node_type {
+            return Some(self.clone());
+        }
+        for child in self.children.iter() {
+            if let Some(n) = child.get_one_descendant(node_type) {
+                return Some(n);
+            }
+        }
+        None
+    }
 }
 
 // TODO: remove all of the below:
@@ -124,7 +202,7 @@ impl Node {
             .children
             .clone()
             .into_iter()
-            .map(|node| node.print(format!("{}|  ", indent)).into())
+            .map(|node| node.print(format!("{}│ ", indent)).into())
             .collect();
         let children = strings.join("\n");
         if self.children.is_empty() {
@@ -142,5 +220,129 @@ impl fmt::Debug for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(format!("{}\n", self.print("".into())).as_str())
         //f.write_str(&format!("{:?}({:?})", self.node_type, self.children))
+    }
+}
+
+#[cfg(test)]
+mod test_parsers {
+    use super::*;
+
+    #[macro_export]
+    macro_rules! expect_parse {
+        ($content:expr, $rule:expr, $expected:expr $(,)?) => {
+            let nodes = match parse_with($content, $rule) {
+                Ok(nodes) => nodes,
+                Err(err) => {
+                    println!("Parsing error:\n{}", err);
+                    panic!("Couldn't parse");
+                }
+            };
+            let node = nodes.first().expect("schould contain node, but was empty");
+            println!("----- success ------\n{:?}\n----- end -----", node);
+            assert_eq!(nodes.len(), 1, "Each Rule should return exactly one Pair");
+            if let Some(_sub) = node.get_one_descendant(&$expected) {
+                assert_eq!(
+                    node.original, $content,
+                    "Rule::{:?} did not consume the whole input",
+                    $rule
+                );
+            } else {
+                println!("Expected Node to contain a {:?}\n", $expected);
+                println!("Node was: \n{:?}", node);
+                panic!("does not contain {:?}", $expected);
+            }
+        };
+    }
+
+    #[test]
+    fn test_function() {
+        expect_parse!(
+            "func asdf() { return 1; }",
+            Rule::DeclarationNonVar,
+            NodeType::KeywordReturn
+        );
+
+        expect_parse!(
+            "public func idQuick() : async Principal { return; }",
+            Rule::DeclarationField,
+            NodeType::Declaration
+        );
+
+        expect_parse!("(this)", Rule::ExpPlain, NodeType::Exp);
+        expect_parse!("(this)", Rule::ExpNullary, NodeType::Exp);
+        expect_parse!("(this)", Rule::ExpPost, NodeType::Exp);
+        expect_parse!("Principal.fromActor(this)", Rule::Exp, NodeType::Exp);
+
+        expect_parse!(
+            "public func idQuick() : async Principal { return Principal.fromActor(this); }",
+            Rule::DeclarationField,
+            NodeType::Declaration
+        );
+    }
+
+    #[test]
+    fn test_function_async() {
+        parse_with(
+            "func asdf() : async Principle { return 1; }",
+            Rule::DeclarationNonVar,
+        )
+        .unwrap();
+
+        parse_with(
+            "func argument() : async Principal { return someone; };",
+            Rule::DeclarationNonVar,
+        )
+        .unwrap();
+
+        parse_with(
+            "query func argument() : async Principal { return someone; };",
+            Rule::DeclarationNonVar,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn test_class() {
+        expect_parse!(
+            "shared class MyClass(a: B) = {}",
+            Rule::DeclarationNonVar,
+            NodeType::ClassBody,
+        );
+
+        expect_parse!(
+            "shared (install) actor class WhoAmI(someone : Principal) = this { }",
+            Rule::DeclarationNonVar,
+            NodeType::ClassBody,
+        );
+
+        expect_parse!(
+            "shared (install) actor class WhoAmI(someone : Principal) = this { var i = 1; }",
+            Rule::DeclarationNonVar,
+            NodeType::ClassBody,
+        );
+    }
+
+    #[test]
+    fn test_class_body() {
+        expect_parse!(
+            "{ public query func installer() : async Principal { return; }; }",
+            Rule::ClassBody,
+            NodeType::ExpNonDec,
+        );
+
+        expect_parse!(
+            "{ public query func installer() : async Principal { return; }; }",
+            Rule::ClassBody,
+            NodeType::Declaration,
+        );
+    }
+
+    #[test]
+    fn test_return_statement() {
+        expect_parse!(
+            "return Principal.fromActor(this)",
+            Rule::Declaration,
+            NodeType::KeywordReturn,
+        );
     }
 }
