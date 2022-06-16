@@ -1,7 +1,6 @@
 help:
 	cat Makefile
 
-
 clean:
 	rm -rf ./release/
 
