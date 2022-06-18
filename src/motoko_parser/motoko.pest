@@ -160,6 +160,10 @@ PatternPlain = {
   | "(" ~ /*List*/(PatternBin ~ ("," ~ PatternBin)* ~ ","?)? ~ ")"
   | Lit
   | Id
+  // TODO: check
+  | KeywordTrue
+  | KeywordFalse
+  | KeywordNull
 }
 
 PatternUn = {
@@ -423,6 +427,10 @@ BANG = @{ "!" ~ !"=" }
 // Sample matches: Id, "{" Id "}", "{}"
 ExpNullary = {
   ExpObj | ExpPlain | Id
+  // TODO: check
+  | KeywordTrue
+  | KeywordFalse
+  | KeywordNull
 }
 
 // Sample matches "{" Id "}"
