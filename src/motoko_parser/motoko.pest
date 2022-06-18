@@ -148,19 +148,22 @@ PatternField = {
 }
 Pattern = { PatternBin }
 PatternBin = {
-  PatternUn ~ (KeywordOr ~ PatternBin)* ~ (":" ~ Type)* 
+  PatternUn ~ (KeywordOr ~ PatternBin)* ~ (":" ~ Type)*
+  | "(" ~ PatternBin ~ ")"
 }
 PatternPlain = {
   "_"
-  | "(" ~ /*List*/(PatternField ~ (Semicolon ~ PatternField)* ~ Semicolon?)? ~ ")"
+  | "(" ~ /*List*/(PatternBin ~ ("," ~ PatternBin)* ~ ","?)? ~ ")"
   | Lit
   | Id
 }
+ParenthesizedPatternPlain = { "(" ~  PatternPlain ~ ")" }
 PatternUn = {
   "#" ~ Id ~ PatternNullary?
   | "?" ~ PatternUn
   | UnOp ~ Lit
   | PatternNullary
+  | "(" ~ PatternUn ~ ")"
 }
 
 UnOp = @{ "+" | "-" | "^" } 
@@ -172,7 +175,7 @@ Type = {
 }
 
 TypeNoBin = {
-    FuncSort? ~ ("<" ~/*List*/(TypeBind ~ ("," ~ TypeBind)* ~ ","?)? ~ ">")? ~ TypeUn ~ "->" ~ TypeNoBin
+    FuncSort? ~ TypeBindList? ~ TypeUn ~ "->" ~ TypeNoBin // 
     | TypePre
 }
 
@@ -243,17 +246,17 @@ DeclarationVar = {
 }
 
 DeclarationNonVar = {
-  "let" ~ Pattern ~ "=" ~ Exp
-  | "type" ~ Id ~ TypeBindList? ~ EqualSign ~ Type
+  KeywordLet ~ Pattern ~ "=" ~ Exp
+  | KeywordType ~ Id ~ TypeBindList? ~ EqualSign ~ Type
   | ObjSort ~ Id? ~ EqualSign? ~ ObjBody
-  | SharedPattern? ~ "func" ~ Id? ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
-  | SharedPattern2? ~ "func" ~ Id? ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
-  | SharedPattern? ~ ObjSort? ~ "class" ~ Id?
-    ~ ("<" ~ /*List*/(TypeBind ~ ("," ~ TypeBind)*)? ~ ","? ~ ">")?
-    ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
-  | SharedPattern2? ~ ObjSort? ~ "class" ~ Id?
-    ~ ("<" ~ /*List*/(TypeBind ~ ("," ~ TypeBind)*)? ~ ","? ~ ">")?
-    ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
+  // func: anonymous
+  | SharedPattern2? ~ KeywordFunc ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  | SharedPattern? ~ KeywordFunc ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  // func: named
+  | SharedPattern2? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  | SharedPattern? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  | SharedPattern2? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
+  | SharedPattern? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
 }
 
 ClassBody = {
@@ -261,7 +264,7 @@ ClassBody = {
 }
 
 SharedPattern = {
-    "shared" ~ "query"? ~ PatternPlain?
+    "shared" ~ "query"? ~ PatternPlain
     | "query" ~ PatternPlain
     | "query"
 }
@@ -293,6 +296,7 @@ Stability = { "flexible" | "stable" }
 
 Exp = {
   ParenthesizedExp
+  | TupleExp // TODO!: not in spec! check!
   | DeclarationVar
   | ExpNonVar
 }
@@ -300,6 +304,10 @@ Exp = {
 // https://github.com/dfinity/motoko/blob/master/doc/modules/language-guide/pages/language-manual.adoc#parentheses
 ParenthesizedExp = {
   "(" ~ Exp ~ ")"
+}
+
+TupleExp = {
+  "(" ~ Exp ~ ("," ~ Exp)* ~ ","? ~ ")"
 }
 
 ExpNonVar = {
@@ -377,13 +385,13 @@ ExpUn = {
 
 // Sample matches: Id, "[]", "{" Id "}", "{}", Id Id Id
 ExpPost = {
-  ("[" ~ "var"?
+  ("[" ~ KeywordVar?
   ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
-  ~ "]"
+  ~ "]" // Arrays
   | ExpNullary
   )
   ~ ExpPostContinue?
-  ~ ("(" ~ ExpPostContinue? ~ ")")? // TODO!: not in spec! check!
+  ~ (TypeBindList? ~ Exp?) // TODO!: not in spec! check!
 }
 ExpPostContinue = {
   ExpPost

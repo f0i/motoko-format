@@ -76,6 +76,7 @@ make_node_types! {
     ClassBody,
     DeclarationField,
     Exp,
+    FuncBody,
     // Keywords
     KeywordActor,
     KeywordAnd,
@@ -343,6 +344,72 @@ mod test_parsers {
             "return Principal.fromActor(this)",
             Rule::Declaration,
             NodeType::KeywordReturn,
+        );
+    }
+
+    #[test]
+    fn test_expression() {
+        expect_parse!(
+            "func x { x + 1 }", //
+            Rule::Exp,
+            NodeType::FuncBody
+        );
+
+        expect_parse!(
+            "let a2 = Array.map<Nat, Nat>(func x { x + 1 }, a)",
+            Rule::Exp,
+            NodeType::FuncBody,
+        );
+
+        expect_parse!(
+            "type Op = Nat -> Nat", //
+            Rule::Exp,
+            NodeType::Type,
+        );
+    }
+
+    #[test]
+    fn test_styleguide_layout_spacing() {
+        // sample code from https://internetcomputer.org/docs/current/developer-docs/build/languages/motoko/style/#spacing
+
+        expect_parse!(
+            "let z = - 2*x + 3*y + 4*(x*x + y*y)", //
+            Rule::Declaration,
+            NodeType::Lit,
+        );
+
+        expect_parse!(
+            concat!(
+                "4 + 5 <= 5 + 4;",
+                "not (a or b and not c);",
+                "v := 0;",
+                "v += 1;",
+            ),
+            Rule::Motoko,
+            NodeType::Lit,
+        );
+
+        expect_parse!(
+            concat!(
+                "var v = 0;", //
+                "let r = { a = 1; b = 2 };",
+            ),
+            Rule::Motoko,
+            NodeType::Lit
+        );
+
+        expect_parse!("(x:Nat)", Rule::PatternPlain, NodeType::Id);
+        expect_parse!("((x, y) : (Nat, Nat))", Rule::PatternPlain, NodeType::Id);
+
+        expect_parse!(
+            concat!(
+                "var v : Nat = 0;",
+                "func foo(x : Nat, y : Nat) : Nat { x + y };",
+                "func bar((x, y) : (Nat, Nat)) : Nat { x + y };",
+                "let w = 1 ^ 0xff : Nat16;",
+            ),
+            Rule::Motoko,
+            NodeType::Lit
         );
     }
 }
