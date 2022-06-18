@@ -136,6 +136,10 @@ KeywordType = @{"type" ~ !IdContinue}
 KeywordVar = @{"var" ~ !IdContinue}
 KeywordWhile = @{"while" ~ !IdContinue}
 
+KeywordNullType = @{"Null" ~ !IdContinue}
+KeywordNoneType = @{"None" ~ !IdContinue}
+KeywordAnyType = @{"Any" ~ !IdContinue}
+KeywordErrorType = @{"Error" ~ !IdContinue}
 
 // Imports
 Import = { KeywordImport ~ PatternNullary ~ EqualSign? ~ Text }
@@ -157,7 +161,7 @@ PatternPlain = {
   | Lit
   | Id
 }
-ParenthesizedPatternPlain = { "(" ~  PatternPlain ~ ")" }
+
 PatternUn = {
   "#" ~ Id ~ PatternNullary?
   | "?" ~ PatternUn
@@ -172,6 +176,12 @@ Type = {
     TypeNoBin ~ KeywordAnd ~ Type
     | TypeNoBin ~ KeywordOr ~ Type
     | TypeNoBin
+    | "(" ~ (Type ~ ("," ~ Type)* ~ ","?)? ~ ")" // Tuple (language-manual.adoc)
+    | KeywordNullType
+    | KeywordNoneType
+    | KeywordAnyType
+    | KeywordErrorType
+
 }
 
 TypeNoBin = {
@@ -238,6 +248,10 @@ Declaration = {
   ( DeclarationVar
   | DeclarationNonVar
   | ExpNonDec
+  // TODO!: not in spec! check!:
+  | KeywordTrue
+  | KeywordFalse
+  | KeywordNull
   ) ~ COMMENT? // hack to collect all tailing whitespace and comments
 }
 
@@ -295,10 +309,10 @@ Visibility = { "private" | "public" | "system" }
 Stability = { "flexible" | "stable" }
 
 Exp = {
-  ParenthesizedExp
-  | TupleExp // TODO!: not in spec! check!
-  | DeclarationVar
+  DeclarationVar
   | ExpNonVar
+  | ParenthesizedExp
+  | TupleExp // TODO!: not in spec! check!
 }
 
 // https://github.com/dfinity/motoko/blob/master/doc/modules/language-guide/pages/language-manual.adoc#parentheses
@@ -367,11 +381,13 @@ BinAssign = @{
   | "@="
   | "^="
   | "|="
+  | BinOp ~ "="
 }
 
 // Sample matches: Id, "[]"
 ExpUn = {
     "?" ~ ExpUn
+    | "(" ~ ExpUn ~ ")"
     | "actor" ~ ExpPlain
     | "not" ~ ExpUn
     | "debug_show" ~ ExpUn
@@ -386,12 +402,12 @@ ExpUn = {
 // Sample matches: Id, "[]", "{" Id "}", "{}", Id Id Id
 ExpPost = {
   ("[" ~ KeywordVar?
-  ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
-  ~ "]" // Arrays
-  | ExpNullary
+    ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
+    ~ "]" // Arrays
+    | ExpNullary
   )
   ~ ExpPostContinue?
-  ~ (TypeBindList? ~ Exp?) // TODO!: not in spec! check!
+  ~ (TypeArgs? ~ Exp?) // TODO!: not in spec! check!
 }
 ExpPostContinue = {
   ExpPost
@@ -402,7 +418,7 @@ ExpPostContinue = {
   | BANG
 }
 
-BANG = @{ "!" }
+BANG = @{ "!" ~ !"=" }
 
 // Sample matches: Id, "{" Id "}", "{}"
 ExpNullary = {
@@ -437,6 +453,7 @@ ExpBin = {
     | BinOp ~ ExpBin
     | RelOp ~ ExpBin
   )?
+  | "(" ~ ExpBin ~ ")"
 }
 
 RelOp = {
@@ -449,15 +466,15 @@ RelOp = {
 }
 
 BinOp = {
-    "+"
-    | "#"
+    "#"
     | "%"
     | "&"
-    | "*"
     | "*%"
     | "**%"
     | "**"
+    | "*"
     | "+%"
+    | "+"
     | "-%"
     | "-"
     | "/"

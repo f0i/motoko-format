@@ -77,6 +77,9 @@ make_node_types! {
     DeclarationField,
     Exp,
     FuncBody,
+    BinOp,
+    RelOp,
+    TypeBindList,
     // Keywords
     KeywordActor,
     KeywordAnd,
@@ -411,5 +414,41 @@ mod test_parsers {
             Rule::Motoko,
             NodeType::Lit
         );
+    }
+
+    #[test]
+    fn test_issues_in_dfinity_examples() {
+        expect_parse!("(size * size) / 64 + 1", Rule::Exp, NodeType::Lit);
+
+        expect_parse!(
+            "let words = (size * size) / 64 + 1;",
+            Rule::Motoko,
+            NodeType::Lit
+        );
+
+        expect_parse!(
+            "let j : Nat64 = 56 -% 8 *% Nat64.fromIntWrap(i);",
+            Rule::Motoko,
+            NodeType::BinOp
+        );
+
+        expect_parse!(
+            "accountIdentifier.size() != 32",
+            Rule::Declaration,
+            NodeType::RelOp
+        );
+
+        expect_parse!(
+            "func (i, j) { false; }",
+            Rule::Declaration,
+            NodeType::KeywordFalse,
+        );
+
+        expect_parse!("Nat", Rule::Type, NodeType::Id,);
+        expect_parse!("(Nat,Nat)", Rule::Type, NodeType::Id,);
+        expect_parse!("<(Nat,Nat)>", Rule::TypeArgs, NodeType::Id,);
+        expect_parse!("List.nil<(Nat,Nat)>", Rule::TypeNullary, NodeType::Id,);
+
+        expect_parse!("var cs = List.nil<(Nat,Nat)>()", Rule::Exp, NodeType::Id,);
     }
 }
