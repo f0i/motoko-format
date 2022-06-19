@@ -61,12 +61,13 @@ Header = ${
   ~ (Comment ~ ShouldNewline)?
 }
 Program = {
-  CompleteImport*
+  CompleteImport* ~ LastImport?
   ~ CompleteDeclaration*
 }
 
 
 CompleteImport = { Import ~ EndOfImport }
+LastImport = { Import ~ ShouldNewline }
 EndOfImport = ${ Semicolon ~ ShouldNewline }
 EndOfDeclaration = ${
   ( Semicolon | EOI )
@@ -347,7 +348,7 @@ ExpNonDec = {
   | "label" ~ Id ~ (":" ~ Type)? ~ ExpNest
   | "loop" ~ ExpNest ~ ("while" ~ ExpNest)?
   | KeywordReturn ~ Exp?
-  | "switch" ~ ExpNullary ~ "{" ~ /*List*/(Case ~ (Semicolon ~ Case)* ~ Semicolon)? ~ "}"
+  | "switch" ~ ExpNullary ~ "{" ~ /*List*/(Case ~ (Semicolon ~ Case)* ~ Semicolon?)? ~ "}"
   | "throw" ~ ExpNest
   | "try" ~ ExpNest ~ Catch
   | "while" ~ ExpNullary ~ ExpNest
@@ -411,7 +412,6 @@ ExpPost = {
     | ExpNullary
   )
   ~ ExpPostContinue?
-  ~ (TypeArgs? ~ Exp?) // TODO!: not in spec! check!
 }
 ExpPostContinue = {
   ExpPost
@@ -454,7 +454,7 @@ ExpPlain = {
 }
 
 ExpBin = {
-  ExpUn ~ (
+  (ExpUn ~ (
     "and" ~ ExpBin
     | "or" ~ ExpBin
     | ":" ~ ExpBin
@@ -462,6 +462,8 @@ ExpBin = {
     | RelOp ~ ExpBin
   )?
   | "(" ~ ExpBin ~ ")"
+  ) ~ (TypeArgs? ~ Exp?) // TODO!: not in spec! check!
+
 }
 
 RelOp = {

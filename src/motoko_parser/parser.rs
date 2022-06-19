@@ -448,7 +448,14 @@ mod test_parsers {
         expect_parse!("(Nat,Nat)", Rule::Type, NodeType::Id,);
         expect_parse!("<(Nat,Nat)>", Rule::TypeArgs, NodeType::Id,);
         expect_parse!("List.nil<(Nat,Nat)>", Rule::TypeNullary, NodeType::Id,);
-
         expect_parse!("var cs = List.nil<(Nat,Nat)>()", Rule::Exp, NodeType::Id,);
+
+        expect_parse!("\"P\" # Nat32", Rule::ExpBin, NodeType::Id);
+        expect_parse!("\"P\"# Nat32()", Rule::ExpBin, NodeType::Id);
+        expect_parse!(
+            "\"Placing order \"# Nat32.toText(id)",
+            Rule::Exp,
+            NodeType::Id
+        );
     }
 }
