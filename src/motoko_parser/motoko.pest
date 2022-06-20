@@ -178,9 +178,7 @@ PatternUn = {
 UnOp = @{ "+" | "-" | "^" } 
 
 Type = {
-    TypeNoBin ~ KeywordAnd ~ Type
-    | TypeNoBin ~ KeywordOr ~ Type
-    | TypeNoBin
+    TypeNoBin ~ ((KeywordAnd | KeywordOr)? ~ Type)?
     | "(" ~ (Type ~ ("," ~ Type)* ~ ","?)? ~ ")" // Tuple (language-manual.adoc)
     | KeywordNullType
     | KeywordNoneType
@@ -190,7 +188,10 @@ Type = {
 }
 
 TypeNoBin = {
-    FuncSort? ~ TypeBindList? ~ TypeUn ~ "->" ~ TypeNoBin // 
+    // original: FuncSort? ~ TypeBindList? ~ TypeUn ~ "->" ~ TypeNoBin | TypePre
+    // refactored for perfomance (avoid exponential recursion)
+    (FuncSort ~ TypeBindList? | TypeBindList) ~ TypeUn ~ "->" ~ TypeNoBin
+    | TypeUn ~ ("->" ~ TypeNoBin)?
     | TypePre
 }
 
@@ -283,9 +284,9 @@ ClassBody = {
 }
 
 SharedPattern = {
-    "shared" ~ "query"? ~ PatternPlain
-    | "query" ~ PatternPlain
-    | "query"
+    KeywordShared ~ KeywordQuery? ~ PatternPlain
+    | KeywordQuery ~ PatternPlain
+    | KeywordQuery
 }
 SharedPattern2 = {
     "shared" ~ "query"?
@@ -352,9 +353,7 @@ ExpNonDec = {
   | "throw" ~ ExpNest
   | "try" ~ ExpNest ~ Catch
   | "while" ~ ExpNullary ~ ExpNest
-  | ExpBin ~ ":=" ~ Exp
-  | ExpBin ~ BinAssign ~ Exp
-  | ExpBin
+  | ExpBin ~ (":=" ~ Exp | BinAssign ~ Exp)?
 }
 
 Case = {
@@ -409,9 +408,9 @@ ExpPost = {
   ("[" ~ KeywordVar?
     ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
     ~ "]" // Arrays
-    | ExpNullary
+    | ExpNullary2
   )
-  ~ ExpPostContinue?
+  ~ ExpPostContinue* // TODO: was ? now *. check
 }
 ExpPostContinue = {
   ExpPost
@@ -426,7 +425,19 @@ BANG = @{ "!" ~ !"=" }
 
 // Sample matches: Id, "{" Id "}", "{}"
 ExpNullary = {
-  ExpObj | ExpPlain | Id
+  ExpObj
+  | ExpPlain
+  | Id
+  // TODO: check
+  | KeywordTrue
+  | KeywordFalse
+  | KeywordNull
+}
+
+ExpNullary2 = {
+  ExpObj
+  | ExpPlain
+  | Id
   // TODO: check
   | KeywordTrue
   | KeywordFalse
@@ -454,16 +465,14 @@ ExpPlain = {
 }
 
 ExpBin = {
-  (ExpUn ~ (
+  ExpUn ~ (
     "and" ~ ExpBin
     | "or" ~ ExpBin
     | ":" ~ ExpBin
     | BinOp ~ ExpBin
     | RelOp ~ ExpBin
   )?
-  | "(" ~ ExpBin ~ ")"
-  ) ~ (TypeArgs? ~ Exp?) // TODO!: not in spec! check!
-
+  ~ (TypeArgs? ~ Exp?) // TODO!: not in spec! check!
 }
 
 RelOp = {
