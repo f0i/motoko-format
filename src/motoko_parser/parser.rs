@@ -71,6 +71,7 @@ make_node_types! {
     PatternField,
     Pattern,
     Type,
+    TypeVariant,
     DeclarationNonVar,
     ExpNonDec,
     ClassBody,
@@ -752,6 +753,18 @@ mod test_parsers {
             "type T11 = ?(Nat,?(Nat,?(Nat,?(Nat,?(Nat,?(Nat,?(Nat,?(Nat,?(Nat,?(Nat,?(Int,T11)))))))))))",
             Rule::Declaration,
             NodeType::Type
+        );
+    }
+
+    #[test]
+    fn test_exp_un() {
+        expect_parse!("[var {#}]", Rule::TypeNullary, NodeType::TypeVariant);
+        expect_parse!("[var] : [var {#}]", Rule::Motoko, NodeType::TypeVariant);
+
+        expect_parse!(
+            "let _ : [var {#} and {#a : Int}] = [var] : [var {#}];",
+            Rule::Motoko,
+            NodeType::TypeVariant
         );
     }
 }

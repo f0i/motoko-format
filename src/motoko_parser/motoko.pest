@@ -36,7 +36,7 @@ Char = @{ "'" ~ (!"'" ~ Character) ~ "'" }
 Text = @{ "\"" ~ (!"\"" ~ Character)* ~ "\"" }
 
 Id = @{ !Keyword ~ IdStart ~ IdContinue* }
-IdStart = @{ ASCII_ALPHA }
+IdStart = @{ ASCII_ALPHA | "_" } // TODO: check
 IdContinue = @{ ASCII_ALPHANUMERIC | "_" }
 
 // comments
@@ -142,6 +142,8 @@ KeywordNoneType = @{"None" ~ !IdContinue}
 KeywordAnyType = @{"Any" ~ !IdContinue}
 KeywordErrorType = @{"Error" ~ !IdContinue}
 
+KeywordUnderscore = @{("_" ~ !IdContinue)}
+
 // Imports
 Import = { KeywordImport ~ PatternNullary ~ EqualSign? ~ Text }
 PatternNullary = {
@@ -157,7 +159,7 @@ PatternBin = {
   | "(" ~ PatternBin ~ ")"
 }
 PatternPlain = {
-  "_"
+  KeywordUnderscore
   | "(" ~ /*List*/(PatternBin ~ ("," ~ PatternBin)* ~ ","?)? ~ ")"
   | Lit
   | Id
@@ -184,7 +186,7 @@ Type = {
     | KeywordNoneType
     | KeywordAnyType
     | KeywordErrorType
-
+    | KeywordActor // TODO: check
 }
 
 TypeNoBin = {
@@ -275,6 +277,7 @@ DeclarationNonVar = {
   // func: named
   | SharedPattern2? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
   | SharedPattern? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  // class
   | SharedPattern2? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
   | SharedPattern? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
 }
@@ -408,7 +411,7 @@ ExpPost = {
   ("[" ~ KeywordVar?
     ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
     ~ "]" // Arrays
-    | ExpNullary2
+    | ExpNullary
   )
   ~ ExpPostContinue* // TODO: was ? now *. check
 }
@@ -434,15 +437,6 @@ ExpNullary = {
   | KeywordNull
 }
 
-ExpNullary2 = {
-  ExpObj
-  | ExpPlain
-  | Id
-  // TODO: check
-  | KeywordTrue
-  | KeywordFalse
-  | KeywordNull
-}
 
 // Sample matches "{" Id "}"
 ExpObj = {
@@ -468,7 +462,7 @@ ExpBin = {
   ExpUn ~ (
     "and" ~ ExpBin
     | "or" ~ ExpBin
-    | ":" ~ ExpBin
+    | ":" ~ TypeNoBin
     | BinOp ~ ExpBin
     | RelOp ~ ExpBin
   )?
