@@ -55,16 +55,17 @@ make_node_types! {
     EOI,
     WHITESPACE,
     Semicolon,
-    Id,
     COMMENT,
     Comment,
+    Id,
+    Lit,
+    Nat,
     Text,
     EqualSign,
     LineCommentContent,
     DocCommentContent,
     BlockCommentContent,
     Declaration,
-    Lit,
     ShouldNewline,
     EndOfImport,
     EndOfDeclaration,
@@ -72,6 +73,7 @@ make_node_types! {
     Pattern,
     Type,
     TypeVariant,
+    TypeTag,
     DeclarationNonVar,
     ExpNonDec,
     ClassBody,
@@ -275,7 +277,7 @@ mod test_parsers {
 
         expect_parse!("(this)", Rule::ExpPlain, NodeType::Exp);
         expect_parse!("(this)", Rule::ExpNullary, NodeType::Exp);
-        expect_parse!("(this)", Rule::ExpPost, NodeType::Exp);
+        expect_parse!("(this)", Rule::ExpPost, NodeType::Id);
         expect_parse!("Principal.fromActor(this)", Rule::Exp, NodeType::Exp);
 
         expect_parse!(
@@ -766,5 +768,55 @@ mod test_parsers {
             Rule::Motoko,
             NodeType::TypeVariant
         );
+    }
+
+    #[test]
+    fn test_exp_non_dec() {
+        expect_parse!(
+            "module { public func empty<K, V>() : Trie<K, V> { false }; }",
+            Rule::Motoko,
+            NodeType::KeywordFalse
+        );
+
+        expect_parse!("Trie<K, V>", Rule::Type, NodeType::Id);
+        //TODO negative test: expect_parse_partial!("Trie<K, V> { #empty; }", Rule::Type, NodeType::Id);
+
+        expect_parse!(
+            "module { public func empty<K, V>() : Trie<K, V> { #empty; }; }",
+            Rule::Declaration,
+            NodeType::ExpNonDec
+        );
+    }
+
+    #[test]
+    fn test_parenthesis() {
+        expect_parse!(
+            "case (?(k3, v3)) { put(#empty, k3, k3_eq, v3).0 }",
+            Rule::Case,
+            NodeType::Nat
+        );
+        expect_parse!(
+            "case (?(k3, v3)) { (put(#empty, k3, k3_eq, v3)).0 }",
+            Rule::Case,
+            NodeType::Nat
+        );
+    }
+
+    #[test]
+    fn test_bin_op() {
+        expect_parse!("424242 : Nat64 == 1", Rule::Exp, NodeType::Lit);
+        expect_parse!("\"a\" # \"b\"", Rule::Exp, NodeType::Text);
+        expect_parse!("\"a\" # \"b\" # \"c\"", Rule::Exp, NodeType::Text);
+
+        expect_parse!("\"a\" < \"b\"", Rule::Exp, NodeType::Text);
+        expect_parse!("\"a\" # \"b\" # \"c\" < \"d\"", Rule::Exp, NodeType::Text);
+        expect_parse!("\"a\" < \"b\" # \"c\" # \"d\"", Rule::Exp, NodeType::Text);
+        expect_parse!("\"a\" > \"b\" # \"c\" # \"d\"", Rule::Exp, NodeType::Text);
+        expect_parse!("\"a\" # \"b\" # \"c\" > \"d\"", Rule::Exp, NodeType::Text);
+    }
+
+    #[test]
+    fn test_float() {
+        expect_parse!("0x644.", Rule::Lit, NodeType::Lit);
     }
 }

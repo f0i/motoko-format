@@ -19,16 +19,16 @@ HexFrac = @{ HexNum }
 Float = @{
   Num ~ "." ~ Frac?
   | Num ~ ("." ~ Frac?)? ~ ("e" | "E") ~ Sign? ~ Num
-  | HexNum ~ "." ~ HexFrac?
+  | "0x" ~ HexNum ~ "." ~ HexFrac?
   | "0x" ~ HexNum ~ ("." ~ HexFrac?)? ~ ("p" | "P") ~ Sign? ~ Num
 }
 
 Escape = @{ "n" | "r" | "t" | "\\" | "\'" | "\"" }
 
-Character = @{ 
+Character = @{
     "\\" ~ Escape
     | "\\" ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT
-    | "\\{" ~ HexNum ~ "}"
+    | "\\u{" ~ HexNum ~ "}"
     | !("\\") ~ any_inline
 }
 
@@ -177,10 +177,10 @@ PatternUn = {
   | "(" ~ PatternUn ~ ")"
 }
 
-UnOp = @{ "+" | "-" | "^" } 
+UnOp = @{ "+" | "-" | "^" }
 
 Type = {
-    TypeNoBin ~ ((KeywordAnd | KeywordOr)? ~ Type)?
+    TypeNoBin ~ ((KeywordAnd | KeywordOr) ~ Type)?
     | "(" ~ (Type ~ ("," ~ Type)* ~ ","?)? ~ ")" // Tuple (language-manual.adoc)
     | KeywordNullType
     | KeywordNoneType
@@ -206,7 +206,7 @@ TypePre = {
     "async" ~ TypePre
     | ObjSort ~ TypeObj
     | TypeUn
-} 
+}
 
 ObjSort = { KeywordObject | KeywordActor | KeywordModule }
 
@@ -223,7 +223,7 @@ TypeNullary = {
     | TypeVariant
     | TypeObj
     | Id ~ ("." ~ Id)* ~ TypeArgs?
-} 
+}
 TypeItem = { (Id ~ ":")? ~ Type }
 
 TypeVariant = {
@@ -233,7 +233,7 @@ TypeVariant = {
 
 TypeObj = {
     "{" ~ /*List*/(TypeField ~ (Semicolon ~ TypeField)* ~ Semicolon?)? ~ "}"
-} 
+}
 
 TypeTag = {
   "#" ~ Id ~ (":" ~ Type)?
@@ -292,9 +292,8 @@ SharedPattern = {
     | KeywordQuery
 }
 SharedPattern2 = {
-    "shared" ~ "query"?
-    | "query"
-    | "query"
+    KeywordShared ~ KeywordQuery?
+    | KeywordQuery
 }
 
 FuncBody = {
@@ -394,7 +393,6 @@ BinAssign = @{
 // Sample matches: Id, "[]"
 ExpUn = {
     "?" ~ ExpUn
-    | "(" ~ ExpUn ~ ")"
     | "actor" ~ ExpPlain
     | "not" ~ ExpUn
     | "debug_show" ~ ExpUn
@@ -404,11 +402,13 @@ ExpUn = {
     | UnOp ~ ExpUn
     | UnAssign ~ ExpUn
     | ExpPost
+    | "(" ~ ExpUn ~ ")"
 }
 
 // Sample matches: Id, "[]", "{" Id "}", "{}", Id Id Id
 ExpPost = {
-  ("[" ~ KeywordVar?
+  ( "(" ~ ExpPost ~ ")"
+    | "[" ~ KeywordVar?
     ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
     ~ "]" // Arrays
     | ExpNullary
@@ -459,23 +459,26 @@ ExpPlain = {
 }
 
 ExpBin = {
-  ExpUn ~ (
-    "and" ~ ExpBin
-    | "or" ~ ExpBin
-    | ":" ~ TypeNoBin
-    | BinOp ~ ExpBin
-    | RelOp ~ ExpBin
-  )?
+  ExpUn ~ ExpBinContinue?
+}
+
+ExpBinContinue = {
+  ("and" ~ ExpBin
+  | "or" ~ ExpBin
+  | ":" ~ TypeNoBin ~ ExpBinContinue?
+  | BinOp ~ ExpBin
+  | RelOp ~ ExpBin
+  )
   ~ (TypeArgs? ~ Exp?) // TODO!: not in spec! check!
 }
 
-RelOp = {
+RelOp = @{
   "=="
   | "!="
-  | "< " // can't match leading spaces
   | "<="
-  | "> " // can't match leading spaces
+  | "<" ~ WHITESPACE // can't match leading spaces
   | ">="
+  | ">" ~ WHITESPACE // can't match leading spaces
 }
 
 BinOp = {

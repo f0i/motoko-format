@@ -100,7 +100,7 @@ fn gen_import(node: &Node, context: &mut Context) -> PrintItems {
         match n.node_type {
             NodeType::KeywordImport => {}
             NodeType::PatternNullary => {
-                items.extend(gen_node(n, context));
+                items.extend(gen_pattern_nullary(n, context));
                 items.push_signal(Signal::SpaceOrNewLine);
                 context.expect_space = true;
                 println!("þ set expect_space");
