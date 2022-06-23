@@ -6,12 +6,12 @@ before_script:
     - rustc --version && cargo --version
 
 # run parser and formatter tests
-test:cargo:
+test:
   script:
     - make test
 
 # build plugin
-release:cargo:
+release:
   script:
     - rustup target add wasm32-unknown-unknown
     - make release

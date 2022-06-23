@@ -7,3 +7,6 @@
 /sample_project
 /pest
 /dprint*
+# test repos
+/examples/*/
+/release/

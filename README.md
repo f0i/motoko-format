@@ -29,7 +29,7 @@ Edit this `dprint.json` file to include include the Motoko plugin:
   "includes": ["**/*.{mo}"],
   "excludes": [],
   "plugins": [
-    "https://gitlab.com/f0i/motoko-format/-/jobs/artifacts/main/raw/release/dprint_plugin_motoko.wasm?job=release:cargo&file=plugin.wasm"
+    "https://gitlab.com/f0i/motoko-format/-/jobs/artifacts/main/raw/release/dprint_plugin_motoko.wasm?job=release&file=plugin.wasm"
   ]
 }
 ```

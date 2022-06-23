@@ -1,0 +1,27 @@
+{
+    "includes": [
+        "**/*.{mo}"
+    ],
+    "excludes": [
+        "motoko/src/prelude/**/*.{mo}",
+        "motoko/doc/schat.mo", // outdated
+        "motoko/test/fail/**/*.{mo}",
+        /* TODO: the following files could not yet be formatted */
+        "motoko/test/run-drun/import-pat.mo",
+        "motoko/test/run-drun/class-import.mo",
+        "/motoko/test/run-drun/show-in-actor.mo",
+        "motoko/test/run-drun/scope-example-implicit.mo",
+        "motoko/test/run-drun/scope-example-func-implicit.mo",
+        "motoko/test/run-drun/scope-example-func.mo",
+        "motoko/test/run-drun/unavailable-constructor.mo",
+        "motoko/test/run-drun/scope-example.mo",
+        "motoko/test/run-drun/distributor.mo",
+        "motoko/test/run/static-func-call.mo",
+        "motoko/test/trap/mulInt8-upper.mo",
+        "motoko/test/trap/mulNat8.mo",
+        "motoko/test/run/const-func-unused.mo"
+    ],
+    "plugins": [
+        "../release/dprint_plugin_motoko.wasm"
+    ]
+}
