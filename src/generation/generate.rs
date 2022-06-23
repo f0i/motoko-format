@@ -183,7 +183,6 @@ fn gen_ignore(_node: &Node, _context: &mut Context) -> PrintItems {
 
 fn gen_comment_line(pre: &str, node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-    println!("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy {:?}{:?}", context, node);
     let spaces = if context.expect_space {
         gen_spaces(1)
     } else {

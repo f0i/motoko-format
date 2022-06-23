@@ -11,6 +11,7 @@ This formatter is in early development!
 > **You could definitely lose what you put in.**
 > But we are headed west! This is the frontier.
 > It's not for everyone, but we're glad you're with us.
+> [¹](http://podcast.banklesshq.com/)
 
 ## Installation
 
@@ -28,7 +29,7 @@ Edit this `dprint.json` file to include include the Motoko plugin:
   "includes": ["**/*.{mo}"],
   "excludes": [],
   "plugins": [
-    "https://gitlab.com/f0i/motoko-formater/-/jobs/artifacts/main/raw/release/dprint_plugin_motoko.wasm?job=release:cargo&file=plugin.wasm"
+    "https://gitlab.com/f0i/motoko-format/-/jobs/artifacts/main/raw/release/dprint_plugin_motoko.wasm?job=release:cargo&file=plugin.wasm"
   ]
 }
 ```
