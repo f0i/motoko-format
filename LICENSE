@@ -27,7 +27,7 @@ dprint/dprint-plugin-dockerfile repository:
 - Copyright (c) 2021-2022 David Sherret
 
 Motoko code snippets for testing are from the
-dfinity/motoko, dfinity/ and dfinity/examples repositories:
+dfinity/motoko, dfinity/motoko-base and dfinity/examples repositories:
 
 - https://github.com/dfinity/motoko
 - https://github.com/dfinity/motoko-base

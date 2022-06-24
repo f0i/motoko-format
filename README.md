@@ -20,7 +20,7 @@ The development version can be used as a plugin for [dprint](https://dprint.dev/
 Go to <https://dprint.dev/install/> to get install instructions for your platform.
 
 Then run `dprint init` inside your project directory.
-This will create a `.dprint.json` file.
+This will create a `dprint.json` file.
 
 Edit this `dprint.json` file to include include the Motoko plugin:
 
