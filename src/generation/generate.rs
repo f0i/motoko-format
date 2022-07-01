@@ -338,11 +338,11 @@ fn gen_list(
 
     context.reset_expect();
     let count = count_not_ignored(nodes);
+    let mut multiline = MultiLineGroup::new(false);
 
-    items.push_signal(Signal::StartNewLineGroup);
-    items.push_signal(Signal::StartIndent);
     items.push_str(start);
-    items.push_signal(Signal::PossibleNewLine);
+    items.extend(multiline.start(1));
+    items.extend(multiline.possible_newline());
 
     if count > 1 {
         context.expect_space_or_newline();
@@ -350,14 +350,16 @@ fn gen_list(
 
     items.extend(gen_list_body(sep, nodes, context));
 
-    context.expect_space_or_newline();
+    items.extend(multiline.if_multiline(sep.to_string().into()));
 
     if count > 1 {
         items.push_signal(Signal::SpaceIfNotTrailing);
     }
+
+    items.extend(multiline.possible_newline());
+    items.extend(multiline.finish());
     items.push_str(end);
-    items.push_signal(Signal::FinishIndent);
-    items.push_signal(Signal::FinishNewLineGroup);
+    context.expect_space_or_newline();
 
     items
 }
@@ -366,6 +368,8 @@ fn gen_list(
 /// return number of printed elements and items
 fn gen_list_body(sep: &str, nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
+    let mut multiline = MultiLineGroup::new(false);
+    items.extend(multiline.start(0));
 
     let mut first = true;
 
@@ -376,22 +380,26 @@ fn gen_list_body(sep: &str, nodes: &Vec<Node>, context: &mut Context) -> PrintIt
         } else {
             if !first {
                 items.push_str(sep);
-                context.expect_space_or_newline();
+                items.extend(multiline.possible_newline());
+                context.expect_space();
             }
             items.extend(gen_node(n, context));
             first = false;
         }
     }
+
+    items.extend(multiline.finish());
     items
 }
 
 fn gen_surounded(start: &str, end: &str, nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
+    let mut multiline = MultiLineGroup::new(false);
 
     items.extend(context.gen_expected_space());
-    items.push_signal(Signal::StartNewLineGroup);
+    items.extend(multiline.start(1));
     items.push_str(start);
-    items.push_signal(Signal::StartIndent);
+    items.extend(multiline.possible_newline());
     context.expect_space_or_newline();
 
     let mut any = false;
@@ -407,13 +415,13 @@ fn gen_surounded(start: &str, end: &str, nodes: &Vec<Node>, context: &mut Contex
     }
     if any {
         items.push_signal(Signal::SpaceIfNotTrailing);
-        items.push_signal(Signal::FinishIndent);
     } else {
         // empty list
         items = PrintItems::new();
         items.push_signal(Signal::StartNewLineGroup);
         items.push_str(start);
     }
+    items.extend(multiline.finish());
     items.push_str(end);
     items.push_signal(Signal::FinishNewLineGroup);
 

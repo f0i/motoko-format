@@ -11,9 +11,12 @@ use crate::generation::generate;
 pub fn format_text(_file_path: &Path, text: &str, config: &Configuration) -> FormatResult {
     let nodes = motoko::parse(text)?;
 
-    let ir = generate(&nodes, text, config);
-
-    let result = dprint_core::formatting::format(|| ir, config_to_print_options(text, config));
+    let result = dprint_core::formatting::format(
+        // generate must be called inside the closure,
+        // because infos and marker counts are reset inside the format function
+        || generate(&nodes, text, config),
+        config_to_print_options(text, config),
+    );
     println!(
         "text: {} => {} <> {}",
         text,

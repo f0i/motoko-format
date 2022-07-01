@@ -63,17 +63,19 @@ pub fn if_not_start_of_line(then: PrintItems) -> PrintItems {
 
 /// Group of optional linebreaks that break all or none
 pub struct MultiLineGroup {
-    pub resolver: ConditionResolver,
-    pub start_ln: LineNumber,
-    pub end_ln: LineNumber,
+    resolver: ConditionResolver,
+    start_ln: LineNumber,
+    end_ln: LineNumber,
     started: bool,
     ended: bool,
+    indent: usize,
 }
 
 impl MultiLineGroup {
     pub fn new(force_multiline: bool) -> Self {
-        let start_ln = LineNumber::new("start");
-        let end_ln = LineNumber::new("end");
+        let start_ln = LineNumber::new("multiline_start");
+        let end_ln = LineNumber::new("multiline_end");
+        let _ = LineNumber::new("unused");
         let resolver = Rc::new(move |condition_context: &mut ConditionResolverContext| {
             if force_multiline {
                 return Some(true);
@@ -88,19 +90,60 @@ impl MultiLineGroup {
             end_ln,
             started: false,
             ended: false,
+            indent: 1,
         }
     }
 
-    pub fn space_or_newline(&self) -> PrintItems {
+    pub fn start(&mut self, indent: usize) -> PrintItems {
+        assert!(!self.started);
+        self.indent = indent;
+
         let mut items = PrintItems::new();
+        items.push_info(self.start_ln);
+        items.push_anchor(LineNumberAnchor::new(self.start_ln));
+        items.push_anchor(LineNumberAnchor::new(self.end_ln));
+        items.push_signal(Signal::StartNewLineGroup);
+
+        for _ in 0..indent {
+            items.extend(self.if_multiline(Signal::StartIndent.into()));
+        }
+
+        self.started = true;
+        items
+    }
+
+    pub fn finish(&mut self) -> PrintItems {
+        assert!(!self.ended);
+
+        let mut items = PrintItems::new();
+
+        for _ in 0..self.indent {
+            items.extend(self.if_multiline(Signal::FinishIndent.into()));
+        }
+        items.push_info(self.end_ln);
+        items.push_signal(Signal::FinishNewLineGroup);
+
+        self.ended = true;
+        items
+    }
+
+    pub fn space_or_newline(&self) -> PrintItems {
         let newline = Signal::NewLine.into();
         let space = Signal::SpaceOrNewLine.into();
-        items.push_condition(conditions::if_true_or(
-            "multi_line_group",
-            self.resolver.clone(),
-            newline,
-            space,
-        ));
-        items
+        self.if_multiline_or(newline, space)
+    }
+
+    pub fn possible_newline(&self) -> PrintItems {
+        let newline = Signal::NewLine.into();
+        let possible = Signal::PossibleNewLine.into();
+        self.if_multiline_or(newline, possible)
+    }
+
+    pub fn if_multiline_or(&self, multi: PrintItems, single: PrintItems) -> PrintItems {
+        conditions::if_true_or("multi_line_group", self.resolver.clone(), multi, single).into()
+    }
+
+    pub fn if_multiline(&self, multi: PrintItems) -> PrintItems {
+        self.if_multiline_or(multi, PrintItems::new())
     }
 }
