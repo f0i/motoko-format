@@ -82,6 +82,14 @@ InvalidPart = { (!Semicolon ~ ANY)+ ~ Semicolon?}
 Semicolon = @{ ";" }
 EqualSign = @{ "=" }
 Colon = @{ ":" }
+Dot = @{ "." }
+BracketOpen = @{ "(" }
+BracketClose = @{ ")" }
+SquareBracketOpen = @{ "[" }
+SquareBracketClose = @{ "]" }
+AngleBracketOpen = @{ "<" }
+AngleBracketClose = @{ ">" }
+Questionmark = @{ "?" }
 
 Keyword = @{
     ("actor" | "and" | "assert" | "async" | "await" | "break" | "case" | "catch" | "class" | "continue" | "debug"
@@ -142,7 +150,7 @@ KeywordNoneType = @{"None" ~ !IdContinue}
 KeywordAnyType = @{"Any" ~ !IdContinue}
 KeywordErrorType = @{"Error" ~ !IdContinue}
 
-KeywordUnderscore = @{("_" ~ !IdContinue)}
+KeywordUnderscore = @{"_" ~ !IdContinue}
 
 // Imports
 Import = { KeywordImport ~ PatternNullary ~ EqualSign? ~ Text }
@@ -155,12 +163,12 @@ PatternField = {
 }
 Pattern = { PatternBin }
 PatternBin = {
-  PatternUn ~ (KeywordOr ~ PatternBin)* ~ (":" ~ Type)*
-  | "(" ~ PatternBin ~ ")"
+  PatternUn ~ (KeywordOr ~ PatternBin)* ~ (Colon ~ Type)*
+  | BracketOpen ~ PatternBin ~ BracketClose
 }
 PatternPlain = {
   KeywordUnderscore
-  | "(" ~ /*List*/(PatternBin ~ ("," ~ PatternBin)* ~ ","?)? ~ ")"
+  | BracketOpen ~ /*List*/(PatternBin ~ ("," ~ PatternBin)* ~ ","?)? ~ BracketClose
   | Lit
   | Id
   // TODO: check
@@ -203,7 +211,7 @@ FuncSort = {
 }
 
 TypePre = {
-    "async" ~ TypePre
+    KeywordAsync ~ TypePre
     | ObjSort ~ TypeObj
     | TypeUn
 }
@@ -268,15 +276,15 @@ DeclarationVar = {
 }
 
 DeclarationNonVar = {
-  KeywordLet ~ Pattern ~ "=" ~ Exp
+  KeywordLet ~ Pattern ~ EqualSign ~ Exp
   | KeywordType ~ Id ~ TypeBindList? ~ EqualSign ~ Type
   | ObjSort ~ Id? ~ EqualSign? ~ ObjBody
   // func: anonymous
-  | SharedPattern2? ~ KeywordFunc ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
-  | SharedPattern? ~ KeywordFunc ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  | SharedPattern2? ~ KeywordFunc ~ TypeBindList? ~ PatternPlain ~ (Colon ~ Type)? ~ FuncBody
+  | SharedPattern? ~ KeywordFunc ~ TypeBindList? ~ PatternPlain ~ (Colon ~ Type)? ~ FuncBody
   // func: named
-  | SharedPattern2? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
-  | SharedPattern? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (":" ~ Type)? ~ FuncBody
+  | SharedPattern2? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (Colon ~ Type)? ~ FuncBody
+  | SharedPattern? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (Colon ~ Type)? ~ FuncBody
   // class
   | SharedPattern2? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
   | SharedPattern? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
@@ -313,8 +321,8 @@ ObjBody = {
   ~ "}"
 }
 DeclarationField = { Visibility? ~ Stability? ~ Declaration }
-Visibility = { "private" | "public" | "system" }
-Stability = { "flexible" | "stable" }
+Visibility = { KeywordPrivate | KeywordPublic | KeywordSystem }
+Stability = { KeywordFlexible | KeywordStable }
 
 Exp = {
   DeclarationVar
@@ -338,32 +346,34 @@ ExpNonVar = {
 }
 
 ExpNonDec = {
-  "assert" ~ ExpNest
-  | "async" ~ ExpNest
-  | "await" ~ ExpNest
-  | "break" ~ Id ~ ExpNullary?
-  | "continue" ~ Id
-  | "debug" ~ ExpNest
-  | "do" ~ "?"? ~ Block
-  | "for" ~ "(" ~ Pattern ~ "in" ~ Exp ~ ")" ~ ExpNest
-  | "if" ~ ExpNullary ~ ExpNest ~ ("else" ~ ExpNest)?
-  | "ignore" ~ ExpNest
-  | "label" ~ Id ~ (":" ~ Type)? ~ ExpNest
-  | "loop" ~ ExpNest ~ ("while" ~ ExpNest)?
+  KeywordAssert ~ ExpNest
+  | KeywordAsync ~ ExpNest
+  | KeywordAwait ~ ExpNest
+  | KeywordBreak ~ Id ~ ExpNullary?
+  | KeywordContinue ~ Id
+  | KeywordDebug ~ ExpNest
+  | KeywordDo ~ "?"? ~ Block
+  | KeywordFor ~ "(" ~ Pattern ~ KeywordIn ~ Exp ~ ")" ~ ExpNest
+  | KeywordIf ~ ExpNullary ~ ExpNest ~ (KeywordElse ~ ExpNest)?
+  | KeywordIgnore ~ ExpNest
+  | KeywordLabel ~ Id ~ (":" ~ Type)? ~ ExpNest
+  | KeywordLoop ~ ExpNest ~ (KeywordWhile ~ ExpNest)?
   | KeywordReturn ~ Exp?
-  | "switch" ~ ExpNullary ~ "{" ~ /*List*/(Case ~ (Semicolon ~ Case)* ~ Semicolon?)? ~ "}"
-  | "throw" ~ ExpNest
-  | "try" ~ ExpNest ~ Catch
-  | "while" ~ ExpNullary ~ ExpNest
-  | ExpBin ~ (":=" ~ Exp | BinAssign ~ Exp)?
+  | KeywordSwitch ~ ExpNullary ~ "{" ~ /*List*/(Case ~ (Semicolon ~ Case)* ~ Semicolon?)? ~ "}"
+  | KeywordThrow ~ ExpNest
+  | KeywordTry ~ ExpNest ~ Catch
+  | KeywordWhile ~ ExpNullary ~ ExpNest
+  | ExpBin ~ (ColonEqual ~ Exp | BinAssign ~ Exp)?
 }
 
+ColonEqual = @{ ":=" }
+
 Case = {
-  "case" ~ PatternNullary ~ ExpNest
+  KeywordCase ~ PatternNullary ~ ExpNest
 }
 
 Catch = {
-  "catch" ~ PatternNullary ~ ExpNest
+  KeywordCatch ~ PatternNullary ~ ExpNest
 }
 
 ExpNest = { Block | Exp }
@@ -392,7 +402,7 @@ BinAssign = @{
 
 // Sample matches: Id, "[]"
 ExpUn = {
-    "?" ~ ExpUn
+    Questionmark ~ ExpUn
     | "actor" ~ ExpPlain
     | "not" ~ ExpUn
     | "debug_show" ~ ExpUn
@@ -407,7 +417,7 @@ ExpUn = {
 
 // Sample matches: Id, "[]", "{" Id "}", "{}", Id Id Id
 ExpPost = {
-  ( "(" ~ ExpPost ~ ")"
+  ( BracketOpen ~ ExpPost ~ BracketClose
     | "[" ~ KeywordVar?
     ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
     ~ "]" // Arrays
@@ -415,11 +425,12 @@ ExpPost = {
   )
   ~ ExpPostContinue* // TODO: was ? now *. check
 }
+
 ExpPostContinue = {
   ExpPost
   | "[" ~ Exp ~ "]"
-  | "." ~ Nat
-  | "." ~ Id
+  | Dot ~ Nat
+  | Dot ~ Id
   | ("<" ~ /*List*/(Type ~("," ~ Type)* ~ ","?)? ~ ">")? ~ ExpNullary
   | BANG
 }
@@ -463,9 +474,9 @@ ExpBin = {
 }
 
 ExpBinContinue = {
-  ("and" ~ ExpBin
-  | "or" ~ ExpBin
-  | ":" ~ TypeNoBin ~ ExpBinContinue?
+  (KeywordAnd ~ ExpBin
+  | KeywordOr ~ ExpBin
+  | Colon ~ TypeNoBin ~ ExpBinContinue?
   | BinOp ~ ExpBin
   | RelOp ~ ExpBin
   )
@@ -481,7 +492,7 @@ RelOp = @{
   | ">" ~ WHITESPACE // can't match leading spaces
 }
 
-BinOp = {
+BinOp = @{
     "#"
     | "%"
     | "&"

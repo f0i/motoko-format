@@ -1,4 +1,4 @@
 == should format ==
-asdf
+a.go(1/*comment*/,2);
 [expect]
-asdf;
+a.go( 1 /* comment */, 2 );

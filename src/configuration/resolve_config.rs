@@ -47,6 +47,7 @@ pub fn resolve_config(
                 .unwrap_or(RECOMMENDED_GLOBAL_CONFIGURATION.new_line_kind),
             &mut diagnostics,
         ),
+        max_blank_lines: get_value(&mut config, "maxBlankLines", 2, &mut diagnostics),
     };
 
     diagnostics.extend(get_unknown_property_diagnostics(config));

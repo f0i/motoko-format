@@ -52,6 +52,8 @@ make_node_types! {
     SpacedComment,
     PatternPlain,
     PatternNullary,
+    PatternBin,
+    PatternUn,
     EOI,
     WHITESPACE,
     Semicolon,
@@ -61,7 +63,11 @@ make_node_types! {
     Lit,
     Nat,
     Text,
+    Num,
+    ObjSort,
+    ObjBody,
     EqualSign,
+    Visibility,
     LineCommentContent,
     DocCommentContent,
     BlockCommentContent,
@@ -74,15 +80,39 @@ make_node_types! {
     Type,
     TypeVariant,
     TypeTag,
+    TypeNoBin,
+    TypeUn,
+    TypeNullary,
+    TypePre,
     DeclarationNonVar,
-    ExpNonDec,
     ClassBody,
+    Block,
     DeclarationField,
     Exp,
+    ExpBin,
+    ExpBinContinue,
+    ExpList,
+    ExpNonDec,
+    ExpNonVar,
+    ExpNullary,
+    ExpPlain,
+    ExpPost,
+    ExpPostContinue,
+    ExpUn,
     FuncBody,
     BinOp,
     RelOp,
     TypeBindList,
+    ColonEqual,
+    Dot,
+    Colon,
+    Questionmark,
+    BracketOpen,
+    BracketClose,
+    SquareBracketOpen,
+    SquareBracketClose,
+    AngleBracketOpen,
+    AngleBracketClose,
     // Keywords
     KeywordActor,
     KeywordAnd,
@@ -198,6 +228,50 @@ impl Node {
             }
         }
         None
+    }
+
+    pub fn get_one_child(&self, node_type: &NodeType) -> Option<Node> {
+        for child in self.children.iter() {
+            if child.node_type == *node_type {
+                return Some(child.clone());
+            }
+        }
+        None
+    }
+
+    pub fn has_child(&self, node_type: &NodeType) -> bool {
+        self.get_one_child(node_type).is_some()
+    }
+
+    pub fn is_first_child(&self, node_type: &NodeType) -> bool {
+        if let Some(child) = self.children.first() {
+            child.node_type == *node_type
+        } else {
+            false
+        }
+    }
+
+    pub fn is_last_child(&self, node_type: &NodeType) -> bool {
+        if let Some(child) = self.children.last() {
+            child.node_type == *node_type
+        } else {
+            false
+        }
+    }
+
+    pub fn is_surrounded_by(&self, node_type_pre: &NodeType, node_type_post: &NodeType) -> bool {
+        self.is_first_child(node_type_pre) && self.is_last_child(node_type_post)
+    }
+
+    pub fn children_without_outer(&self) -> Vec<Node> {
+        let mut children = self.children.clone();
+        if children.len() > 0 {
+            children.remove(0);
+        }
+        if children.len() > 0 {
+            children.remove(children.len() - 1);
+        }
+        children
     }
 }
 

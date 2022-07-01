@@ -8,5 +8,5 @@ pub struct Configuration {
     pub line_width: u32,
     pub new_line_kind: NewLineKind,
     // Maximum number of linebreaks between
-    //pub max_newlines: u32,
+    pub max_blank_lines: u32,
 }

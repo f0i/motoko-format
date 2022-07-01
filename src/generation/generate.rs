@@ -1,10 +1,9 @@
 use dprint_core::formatting::*;
-use std::rc::Rc;
 
 use super::context::Context;
 use super::helper::*;
 use crate::configuration::Configuration;
-use crate::motoko_parser::{Node, NodeType};
+use crate::motoko_parser::{Node, NodeType::*};
 
 #[cfg(debug_assertions)]
 pub fn generate(nodes: &Vec<Node>, text: &str, config: &Configuration) -> PrintItems {
@@ -32,50 +31,58 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
 
     items.extend(match &node.node_type {
-        NodeType::Motoko => gen_nodes(&node.children, context),
-        NodeType::Header => gen_nodes(&node.children, context),
-        NodeType::Program => gen_nodes(&node.children, context),
-        NodeType::CompleteImport => gen_nodes(&node.children, context),
-        NodeType::CompleteDeclaration => gen_declaration(&node, context),
-        NodeType::EndOfImport => gen_nodes(&node.children, context),
-        NodeType::EndOfDeclaration => gen_nodes(&node.children, context),
-        NodeType::Import => gen_import(&node, context),
-        NodeType::Id => gen_id(&node, context),
-        NodeType::EqualSign => gen_id(&node, context),
-        NodeType::WHITESPACE => gen_ignore(&node, context),
-        NodeType::PatternNullary => gen_pattern_nullary(&node, context),
-        NodeType::PatternPlain => gen_nodes(&node.children, context),
-        NodeType::Pattern => gen_id_trim(&node, context), // TODO
-        NodeType::Text => gen_id(&node, context),
-        NodeType::Semicolon => gen_ignore(&node, context),
-        NodeType::EOI => gen_ignore(&node, context),
-        NodeType::COMMENT => gen_nodes(&node.children, context),
-        NodeType::Comment => gen_comment(&node, context),
-        NodeType::LineComment => gen_comment_line("//", &node, context),
-        NodeType::DocComment => gen_comment_line("///", &node, context),
-        NodeType::BlockComment => gen_comment_block(&node, context),
-        NodeType::LineCommentContent => gen_id_trim(&node, context),
-        NodeType::DocCommentContent => gen_id_trim(&node, context),
-        NodeType::BlockCommentContent => gen_id_multiline(&node, context),
-        NodeType::SpacedComment => gen_spaced_comment(&node, context),
-        NodeType::Declaration => gen_nodes(&node.children, context),
-        NodeType::Lit => gen_id(&node, context),
-        NodeType::ShouldNewline => gen_should_newline(&node, context),
-        NodeType::PatternField => gen_pattern_field(&node, context),
-        NodeType::DeclarationNonVar => gen_id_trim(&node, context), // TODO
-        NodeType::ExpNonDec => gen_id_trim(&node, context),         // TODO
+        //Motoko => gen_debug(&node, context),
+        Motoko => gen_nodes(&node.children, context),
+        Header => gen_nodes(&node.children, context),
+        Program => gen_nodes(&node.children, context),
+        CompleteImport => gen_nodes(&node.children, context),
+        CompleteDeclaration => gen_declaration(&node, context),
+        EndOfImport => gen_nodes(&node.children, context),
+        EndOfDeclaration => gen_nodes(&node.children, context),
+        Import => gen_import(&node, context),
+        Id => gen_id(&node, context),
+        EqualSign => gen_id(&node, context),
+        WHITESPACE => gen_ignore(&node, context),
+        PatternNullary => gen_pattern_nullary(&node, context),
+        PatternPlain => gen_nodes_maybe_perenthesized(&node, context),
+        Pattern => gen_id_trim(&node, context), // TODO
+        Text => gen_id(&node, context),
+        Semicolon => gen_ignore(&node, context),
+        EOI => gen_ignore(&node, context),
+        COMMENT => gen_nodes(&node.children, context),
+        Comment => gen_comment(&node, context),
+        LineComment => gen_comment_line("//", &node, context),
+        DocComment => gen_comment_line("///", &node, context),
+        BlockComment => gen_comment_block(&node, context),
+        LineCommentContent => gen_id_trim(&node, context),
+        DocCommentContent => gen_id_trim(&node, context),
+        BlockCommentContent => gen_id_multiline(&node, context),
+        SpacedComment => gen_spaced_comment(&node, context),
+        Declaration => gen_nodes(&node.children, context),
+        Lit => gen_id(&node, context),
+        ShouldNewline => gen_should_newline(&node, context),
+        PatternField => gen_pattern_field(&node, context),
+        ExpNonDec => gen_exp_non_dec(&node, context),
+
+        DeclarationNonVar | Exp | ExpNonVar | ExpPlain | ExpBin | ExpUn | ExpPostContinue
+        | ExpNullary | DeclarationField | PatternUn | Type | TypeNoBin | TypeUn | TypeNullary
+        | TypePre | ExpBinContinue => gen_nodes(&node.children, context),
+
+        ObjSort | Visibility | KeywordFunc | KeywordAsync | KeywordReturn | Colon | BinOp => {
+            gen_keyword(node, context)
+        }
+
+        ObjBody | Block => gen_surounded("{", "}", &node.children, context),
+
+        FuncBody => gen_func_body(node, context),
+
+        ExpPost | PatternBin => gen_nodes_maybe_perenthesized(&node, context),
+        ExpList => gen_list("(", ",", ")", &node.children, context),
+        Dot => gen_id_no_space(&node, context),
 
         // TODO: remove to handle all cases
         _ => gen_id(&node, context),
-        _ => {
-            let mut i = PrintItems::new();
-            println!("TODO: generate dprint IR from {:?}", node);
-            for s in node.print("".into()).split("\n") {
-                i.push_str(s);
-                i.push_signal(Signal::ExpectNewLine);
-            }
-            i
-        }
+        //_ => gen_debug(node, context),
     });
     items
 }
@@ -92,32 +99,29 @@ fn gen_import(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     items.push_signal(Signal::StartNewLineGroup);
     items.push_str("import");
-    items.push_signal(Signal::SpaceIfNotTrailing);
+    context.expect_space();
     items.push_signal(Signal::StartIndent);
     items.push_signal(Signal::StartIndent);
 
     for n in node.children.iter() {
         match n.node_type {
-            NodeType::KeywordImport => {}
-            NodeType::PatternNullary => {
+            KeywordImport => { /* already added */ }
+            PatternNullary => {
                 items.extend(gen_pattern_nullary(n, context));
-                items.push_signal(Signal::SpaceOrNewLine);
-                context.expect_space = true;
-                println!("þ set expect_space");
+                context.expect_space();
             }
-            NodeType::EqualSign => {
+            EqualSign => {
                 items.extend(gen_node(n, context));
-                items.push_signal(Signal::SpaceIfNotTrailing);
-                context.expect_space = true;
-                println!("þ set expect_space");
+                context.expect_space();
+            }
+            COMMENT => {
+                items.extend(gen_node(n, context));
             }
             _ => items.extend(gen_node(n, context)),
         }
     }
 
     items.push_str(";");
-    context.expect_space = false;
-    println!("þ reset expect_space");
     items.push_signal(Signal::FinishIndent);
     items.push_signal(Signal::FinishIndent);
     items.push_signal(Signal::FinishNewLineGroup);
@@ -126,9 +130,9 @@ fn gen_import(node: &Node, context: &mut Context) -> PrintItems {
 }
 
 // Use the original node content as text
-fn gen_id(node: &Node, _context: &mut Context) -> PrintItems {
+fn gen_id(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-    // TODO? check & handle line breaks
+    items.extend(context.gen_expected_space());
     let mut first = true;
     for l in node.original.split("\n") {
         if !first {
@@ -137,6 +141,14 @@ fn gen_id(node: &Node, _context: &mut Context) -> PrintItems {
         first = false;
         items.push_str(l);
     }
+    context.expect_space();
+    items
+}
+
+fn gen_id_no_space(node: &Node, context: &mut Context) -> PrintItems {
+    context.reset_expect();
+    let items = gen_id(node, context);
+    context.reset_expect();
     items
 }
 
@@ -181,18 +193,22 @@ fn gen_ignore(_node: &Node, _context: &mut Context) -> PrintItems {
     PrintItems::new()
 }
 
+fn gen_keyword(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    context.expect_space();
+    items.extend(context.gen_expected_space());
+
+    items.extend(gen_id(node, context));
+    context.expect_space();
+    items
+}
+
 fn gen_comment_line(pre: &str, node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-    let spaces = if context.expect_space {
-        gen_spaces(1)
-    } else {
-        gen_spaces(2)
-    };
-    items.push_condition(conditions::if_true(
-        "endLineText",
-        Rc::new(|context| Some(context.writer_info.column_number > 0)),
-        spaces,
-    ));
+    let spaces = gen_spaces(2);
+    context.expect_space();
+    items.extend(if_not_start_of_line(spaces));
+
     items.push_str(pre);
     items.push_signal(Signal::SpaceIfNotTrailing);
     // TODO: wrap / reflow text?
@@ -215,19 +231,10 @@ fn gen_comment(node: &Node, context: &mut Context) -> PrintItems {
 
 fn gen_comment_block(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-    items.push_condition(conditions::if_true(
-        "endLineText",
-        Rc::new(|context| Some(context.writer_info.column_number > 0)),
-        {
-            // inline block comments only with one space
-            let mut items = PrintItems::new();
-            if !context.expect_space {
-                items.push_signal(Signal::SpaceIfNotTrailing);
-            }
-            context.expect_space = false;
-            items
-        },
-    ));
+    //items.extend(gen_expected_space(context));
+
+    // inline block comments only with one space
+    items.extend(if_not_start_of_line(gen_spaces(1)));
     items.push_signal(Signal::StartIgnoringIndent);
 
     items.push_str("/*");
@@ -237,7 +244,7 @@ fn gen_comment_block(node: &Node, context: &mut Context) -> PrintItems {
     let mut add_linebreak = false;
     for n in node.children.iter() {
         match n.node_type {
-            NodeType::WHITESPACE => {
+            WHITESPACE => {
                 add_linebreak = true;
             }
             _ => items.extend(gen_node(n, context)),
@@ -245,8 +252,8 @@ fn gen_comment_block(node: &Node, context: &mut Context) -> PrintItems {
     }
     items.push_signal(Signal::SpaceIfNotTrailing);
     items.push_str("*/");
+    context.expect_space();
     items.push_signal(Signal::FinishIgnoringIndent);
-    items.push_signal(Signal::SpaceIfNotTrailing);
     if add_linebreak {
         items.push_signal(Signal::NewLine);
     }
@@ -260,7 +267,7 @@ fn gen_should_newline(node: &Node, context: &mut Context) -> PrintItems {
     let mut has_linebreak = false;
     for (_i, n) in node.children.iter().enumerate() {
         match n.node_type {
-            NodeType::WHITESPACE => {
+            WHITESPACE => {
                 let lines = count_lines(&n.original).clamp(0, 3);
                 if lines > 0 {
                     items.extend(gen_newlines(lines));
@@ -287,7 +294,7 @@ fn gen_declaration(node: &Node, context: &mut Context) -> PrintItems {
     for (i, n) in node.children.iter().enumerate() {
         semicolon = i;
         match n.node_type {
-            NodeType::EndOfDeclaration => break,
+            EndOfDeclaration => break,
             _ => {
                 items.extend(gen_node(n, context));
             }
@@ -309,7 +316,9 @@ fn gen_declaration(node: &Node, context: &mut Context) -> PrintItems {
 fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
 
-    if has_child(&node, NodeType::PatternField) {
+    items.extend(context.gen_expected_space());
+
+    if node.get_one_child(&PatternField).is_some() {
         items.extend(gen_list("{", ";", "}", &node.children, context));
     } else {
         items.extend(gen_nodes(&node.children, context))
@@ -327,24 +336,84 @@ fn gen_list(
 ) -> PrintItems {
     let mut items = PrintItems::new();
 
+    context.reset_expect();
+    let count = count_not_ignored(nodes);
+
     items.push_signal(Signal::StartNewLineGroup);
+    items.push_signal(Signal::StartIndent);
     items.push_str(start);
-    items.push_signal(Signal::SpaceOrNewLine);
+    items.push_signal(Signal::PossibleNewLine);
+
+    if count > 1 {
+        context.expect_space_or_newline();
+    }
+
+    items.extend(gen_list_body(sep, nodes, context));
+
+    context.expect_space_or_newline();
+
+    if count > 1 {
+        items.push_signal(Signal::SpaceIfNotTrailing);
+    }
+    items.push_str(end);
+    items.push_signal(Signal::FinishIndent);
+    items.push_signal(Signal::FinishNewLineGroup);
+
+    items
+}
+
+/// generate list content
+/// return number of printed elements and items
+fn gen_list_body(sep: &str, nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
 
     let mut first = true;
+
     for n in nodes {
-        if is_whitespace_or_comment(n) || is_ignored(n) {
+        if is_ignored(n) {
+        } else if is_whitespace_or_comment(n) {
             items.extend(gen_node(n, context));
         } else {
             if !first {
                 items.push_str(sep);
-                items.push_signal(Signal::SpaceOrNewLine);
+                context.expect_space_or_newline();
             }
-            first = false;
             items.extend(gen_node(n, context));
+            first = false;
         }
     }
-    items.push_signal(Signal::SpaceIfNotTrailing);
+    items
+}
+
+fn gen_surounded(start: &str, end: &str, nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+
+    items.extend(context.gen_expected_space());
+    items.push_signal(Signal::StartNewLineGroup);
+    items.push_str(start);
+    items.push_signal(Signal::StartIndent);
+    context.expect_space_or_newline();
+
+    let mut any = false;
+    for n in nodes {
+        if is_ignored(n) {
+        } else if is_whitespace_or_comment(n) {
+            items.extend(gen_node(n, context));
+            any = true;
+        } else {
+            items.extend(gen_node(n, context));
+            any = true;
+        }
+    }
+    if any {
+        items.push_signal(Signal::SpaceIfNotTrailing);
+        items.push_signal(Signal::FinishIndent);
+    } else {
+        // empty list
+        items = PrintItems::new();
+        items.push_signal(Signal::StartNewLineGroup);
+        items.push_str(start);
+    }
     items.push_str(end);
     items.push_signal(Signal::FinishNewLineGroup);
 
@@ -355,21 +424,17 @@ fn gen_pattern_field(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     for n in node.children.iter() {
         match n.node_type {
-            NodeType::Type => {
+            Type => {
                 items.push_str(":");
                 items.push_signal(Signal::SpaceIfNotTrailing);
                 items.extend(gen_node(n, context));
             }
-            NodeType::EqualSign => {}
-            NodeType::Pattern => {
+            EqualSign => {}
+            Pattern => {
                 items.push_signal(Signal::SpaceIfNotTrailing);
                 items.push_str("=");
                 items.push_signal(Signal::SpaceIfNotTrailing);
-                context.expect_space = true;
-                println!("þ set expect_space");
                 items.extend(gen_node(n, context));
-                println!("þ reset expect_space");
-                context.expect_space = false;
             }
 
             _ => {
@@ -386,7 +451,7 @@ fn gen_spaced_comment(node: &Node, context: &mut Context) -> PrintItems {
 
     for (_i, n) in node.children.iter().enumerate() {
         match n.node_type {
-            NodeType::WHITESPACE => {
+            WHITESPACE => {
                 let lines = count_lines(&n.original).clamp(0, 3);
                 if lines > 0 {
                     items.extend(gen_newlines(lines));
@@ -397,6 +462,62 @@ fn gen_spaced_comment(node: &Node, context: &mut Context) -> PrintItems {
             }
         }
     }
+
+    items
+}
+
+fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+
+    let mut indents = 0;
+    for (i, n) in node.children.iter().enumerate() {
+        match n.node_type {
+            ColonEqual => {
+                items.push_str(":=");
+                items.push_signal(Signal::SpaceOrNewLine);
+                items.push_signal(Signal::StartIndent);
+                indents += 1;
+            }
+            _ => {
+                items.extend(gen_node(n, context));
+            }
+        }
+    }
+
+    for _ in 0..indents {
+        items.push_signal(Signal::FinishIndent);
+    }
+
+    items
+}
+
+fn gen_nodes_maybe_perenthesized(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+
+    if node.is_surrounded_by(&BracketOpen, &BracketClose) {
+        // pharentesized
+        items.extend(gen_list(
+            "(",
+            ",",
+            ")",
+            &node.children_without_outer(),
+            context,
+        ));
+        context.expect_space_or_newline();
+    } else {
+        items.extend(gen_nodes(&node.children, context));
+    }
+
+    items
+}
+
+fn gen_func_body(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+
+    if node.has_child(&Exp) {
+        items.push_str("=");
+    }
+    items.extend(gen_nodes(&node.children, context));
 
     items
 }
@@ -418,3 +539,14 @@ fn gen_(node: &Node, context: &mut Context) -> PrintItems {
 }
 
 */
+
+fn gen_debug(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    items.extend(context.gen_expected_space());
+    println!("TODO: generate dprint IR from {:?}", node);
+    for s in node.print("".into()).split("\n") {
+        items.push_str(s);
+        items.push_signal(Signal::ExpectNewLine);
+    }
+    items
+}
