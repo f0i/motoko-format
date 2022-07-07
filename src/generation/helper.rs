@@ -66,84 +66,75 @@ pub struct MultiLineGroup {
     resolver: ConditionResolver,
     start_ln: LineNumber,
     end_ln: LineNumber,
-    started: bool,
-    ended: bool,
-    indent: usize,
+    indent: u32,
+    items: PrintItems,
 }
 
 impl MultiLineGroup {
-    pub fn new(force_multiline: bool) -> Self {
-        let start_ln = LineNumber::new("multiline_start");
-        let end_ln = LineNumber::new("multiline_end");
+    pub fn new(force_multi_line: bool, indent: u32) -> Self {
+        let start_ln = LineNumber::new("multi_line_start");
+        let end_ln = LineNumber::new("multi_line_end");
         let _ = LineNumber::new("unused");
         let resolver = Rc::new(move |condition_context: &mut ConditionResolverContext| {
-            if force_multiline {
+            if force_multi_line {
                 return Some(true);
             }
             // check if it spans multiple lines, and if it does then make it multi-line
             condition_helpers::is_multiple_lines(condition_context, start_ln, end_ln)
         });
 
+        let mut items = PrintItems::new();
+        items.push_info(start_ln);
+        items.push_anchor(LineNumberAnchor::new(start_ln));
+        items.push_signal(Signal::StartNewLineGroup);
+
         Self {
             resolver,
             start_ln,
             end_ln,
-            started: false,
-            ended: false,
-            indent: 1,
+            indent,
+            items,
         }
     }
 
-    pub fn start(&mut self, indent: usize) -> PrintItems {
-        assert!(!self.started);
-        self.indent = indent;
-
-        let mut items = PrintItems::new();
-        items.push_info(self.start_ln);
-        items.push_anchor(LineNumberAnchor::new(self.start_ln));
-        items.push_anchor(LineNumberAnchor::new(self.end_ln));
-        items.push_signal(Signal::StartNewLineGroup);
-
-        for _ in 0..indent {
-            items.extend(self.if_multiline(Signal::StartIndent.into()));
-        }
-
-        self.started = true;
-        items
+    pub fn extend(&mut self, items: PrintItems) {
+        self.items.extend(items);
     }
 
-    pub fn finish(&mut self) -> PrintItems {
-        assert!(!self.ended);
-
-        let mut items = PrintItems::new();
-
-        for _ in 0..self.indent {
-            items.extend(self.if_multiline(Signal::FinishIndent.into()));
-        }
-        items.push_info(self.end_ln);
-        items.push_signal(Signal::FinishNewLineGroup);
-
-        self.ended = true;
-        items
+    pub fn push_str(&mut self, s: &str) {
+        self.items.push_str(s);
     }
 
-    pub fn space_or_newline(&self) -> PrintItems {
+    pub fn push_signal(&mut self, s: Signal) {
+        self.items.push_signal(s);
+    }
+
+    pub fn take(mut self) -> PrintItems {
+        self.items.push_info(self.end_ln);
+        self.items.push_signal(Signal::FinishNewLineGroup);
+
+        ir_helpers::with_indent_times(self.items, self.indent)
+    }
+
+    pub fn space_or_newline(&mut self) {
         let newline = Signal::NewLine.into();
         let space = Signal::SpaceOrNewLine.into();
-        self.if_multiline_or(newline, space)
+        self.if_multiline_or(newline, space);
     }
 
-    pub fn possible_newline(&self) -> PrintItems {
+    pub fn possible_newline(&mut self) {
         let newline = Signal::NewLine.into();
         let possible = Signal::PossibleNewLine.into();
-        self.if_multiline_or(newline, possible)
+        self.if_multiline_or(newline, possible);
     }
 
-    pub fn if_multiline_or(&self, multi: PrintItems, single: PrintItems) -> PrintItems {
-        conditions::if_true_or("multi_line_group", self.resolver.clone(), multi, single).into()
+    pub fn if_multiline_or(&mut self, multi: PrintItems, single: PrintItems) {
+        let cond =
+            conditions::if_true_or("multi_line_group", self.resolver.clone(), multi, single).into();
+        self.items.extend(cond);
     }
 
-    pub fn if_multiline(&self, multi: PrintItems) -> PrintItems {
-        self.if_multiline_or(multi, PrintItems::new())
+    pub fn if_multiline(&mut self, multi: PrintItems) {
+        self.if_multiline_or(multi, PrintItems::new());
     }
 }
