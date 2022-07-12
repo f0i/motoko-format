@@ -41,10 +41,16 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         EndOfDeclaration => gen_nodes(&node.children, context),
         Import => gen_import(&node, context),
         Id => gen_id(&node, context),
-        EqualSign => gen_id(&node, context),
+        EqualSign => {
+            context.expect_space();
+            gen_id(&node, context)
+        }
         WHITESPACE => gen_ignore(&node, context),
         PatternNullary => gen_pattern_nullary(&node, context),
-        PatternPlain => gen_nodes_maybe_perenthesized(&node, context),
+        PatternPlain => {
+            context.reset_expect();
+            gen_nodes_maybe_perenthesized(&node, context)
+        }
         Pattern => gen_id_trim(&node, context), // TODO
         Text => gen_id(&node, context),
         Semicolon => gen_ignore(&node, context),
@@ -64,21 +70,43 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         PatternField => gen_pattern_field(&node, context),
         ExpNonDec => gen_exp_non_dec(&node, context),
 
-        DeclarationNonVar | Exp | ExpNonVar | ExpPlain | ExpBin | ExpUn | ExpPostContinue
-        | ExpNullary | DeclarationField | PatternUn | Type | TypeNoBin | TypeUn | TypeNullary
-        | TypePre | ExpBinContinue => gen_nodes(&node.children, context),
+        DeclarationNonVar | Exp | ExpNonVar | ExpPlain | ExpBin | ExpUn | ExpNullary
+        | DeclarationField | PatternUn | Type | TypeNoBin | TypeUn | TypeNullary | TypePre
+        | ExpBinContinue => gen_nodes(&node.children, context),
+
+        ExpPostContinue => {
+            context.reset_expect();
+            gen_nodes(&node.children, context)
+        }
 
         ObjSort | Visibility | KeywordFunc | KeywordAsync | KeywordReturn | Colon | BinOp => {
             gen_keyword(node, context)
         }
 
-        ObjBody | Block => gen_surounded("{", "}", &node.children, context),
+        Block => {
+            let force_multiline = count_lines(&node.original) > 0;
+            gen_surounded("{", "}", &node.children, context, force_multiline)
+        }
+
+        ObjBody => {
+            let force_multiline = count_lines(&node.original) > 0;
+            gen_list("{", ";", "}", &node.children, context, force_multiline)
+        }
 
         FuncBody => gen_func_body(node, context),
 
         ExpPost | PatternBin => gen_nodes_maybe_perenthesized(&node, context),
-        ExpList => gen_list("(", ",", ")", &node.children, context),
-        Dot => gen_id_no_space(&node, context),
+        ExpList => {
+            context.reset_expect();
+            gen_list("(", ",", ")", &node.children, context, false)
+        }
+        Dot | TypeBindList => gen_id_no_space(&node, context),
+
+        TypeArgs => {
+            context.reset_expect();
+            let force_multiline = count_lines(&node.original) > 0;
+            gen_list("<", ",", ">", &node.children, context, force_multiline)
+        }
 
         // TODO: remove to handle all cases
         _ => gen_id(&node, context),
@@ -319,7 +347,7 @@ fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
     items.extend(context.gen_expected_space());
 
     if node.get_one_child(&PatternField).is_some() {
-        items.extend(gen_list("{", ";", "}", &node.children, context));
+        items.extend(gen_list("{", ";", "}", &node.children, context, false));
     } else {
         items.extend(gen_nodes(&node.children, context))
     }
@@ -333,15 +361,17 @@ fn gen_list(
     end: &str,
     nodes: &Vec<Node>,
     context: &mut Context,
+    force_multiline: bool,
 ) -> PrintItems {
     let mut items = PrintItems::new();
 
-    context.reset_expect();
     let count = count_not_ignored(nodes);
+
+    items.extend(context.gen_expected_space());
 
     items.push_str(start);
 
-    let mut multiline = MultiLineGroup::new(false, 1);
+    let mut multiline = MultiLineGroup::new(force_multiline, 1);
     multiline.possible_newline();
 
     if count > 1 {
@@ -350,7 +380,9 @@ fn gen_list(
 
     multiline.extend(gen_list_body(sep, nodes, context));
 
-    multiline.if_multiline(sep.to_string().into());
+    if count > 0 {
+        multiline.if_multiline(sep.to_string().into());
+    }
 
     if count > 1 {
         multiline.push_signal(Signal::SpaceIfNotTrailing);
@@ -364,8 +396,6 @@ fn gen_list(
     items
 }
 
-/// generate list content
-/// return number of printed elements and items
 fn gen_list_body(sep: &str, nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
     let mut items = MultiLineGroup::new(false, 0);
 
@@ -389,9 +419,15 @@ fn gen_list_body(sep: &str, nodes: &Vec<Node>, context: &mut Context) -> PrintIt
     items.take()
 }
 
-fn gen_surounded(start: &str, end: &str, nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
+fn gen_surounded(
+    start: &str,
+    end: &str,
+    nodes: &Vec<Node>,
+    context: &mut Context,
+    force_multiline: bool,
+) -> PrintItems {
     let mut items = PrintItems::new();
-    let mut multiline = MultiLineGroup::new(false, 1);
+    let mut multiline = MultiLineGroup::new(force_multiline, 1);
 
     items.extend(context.gen_expected_space());
     items.push_str(start);
@@ -402,6 +438,7 @@ fn gen_surounded(start: &str, end: &str, nodes: &Vec<Node>, context: &mut Contex
     let mut any = false;
     for n in nodes {
         if is_ignored(n) {
+            // ignore
         } else if is_whitespace_or_comment(n) {
             multiline.extend(gen_node(n, context));
             any = true;
@@ -412,6 +449,7 @@ fn gen_surounded(start: &str, end: &str, nodes: &Vec<Node>, context: &mut Contex
     }
     if any {
         multiline.push_signal(Signal::SpaceIfNotTrailing);
+        multiline.possible_newline();
     } else {
         // empty list
     }
@@ -503,6 +541,7 @@ fn gen_nodes_maybe_perenthesized(node: &Node, context: &mut Context) -> PrintIte
             ")",
             &node.children_without_outer(),
             context,
+            false,
         ));
         context.expect_space_or_newline();
     } else {

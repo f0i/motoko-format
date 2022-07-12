@@ -84,6 +84,7 @@ make_node_types! {
     TypeUn,
     TypeNullary,
     TypePre,
+    TypeArgs,
     DeclarationNonVar,
     ClassBody,
     Block,

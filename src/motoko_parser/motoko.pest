@@ -230,7 +230,7 @@ TypeNullary = {
     | "[" ~ "var"? ~ Type ~ "]"
     | TypeVariant
     | TypeObj
-    | Id ~ ("." ~ Id)* ~ TypeArgs?
+    | Id ~ (Dot ~ Id)* ~ TypeArgs?
 }
 TypeItem = { (Id ~ ":")? ~ Type }
 
