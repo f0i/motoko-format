@@ -1,4 +1,12 @@
-== should format ==
- go (   1   )
+== (skip) should format ==
+module {
+  public func e(m : List<Bool>) : List<Bool> {
+    let input = List.append();
+  }
+}
 [expect]
-go(1);
+module {
+  public func e(m : List<Bool>) : List<Bool> {
+    let input = List.append();
+  };
+};

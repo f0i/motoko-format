@@ -6,7 +6,7 @@ use dprint_core::formatting::*;
 pub struct Context<'a> {
     config: &'a Configuration,
     expect_space: bool,
-    expect_space_or_newline: bool,
+    possible_newline: bool,
     mode_no_space: bool,
 }
 
@@ -15,7 +15,7 @@ impl<'a> Context<'a> {
         Self {
             config,
             expect_space: false,
-            expect_space_or_newline: false,
+            possible_newline: false,
             mode_no_space: false,
         }
     }
@@ -24,17 +24,24 @@ impl<'a> Context<'a> {
         self.expect_space = true;
     }
 
+    pub fn possible_newline(&mut self) {
+        self.possible_newline = true;
+    }
+
     pub fn expect_space_or_newline(&mut self) {
-        self.expect_space_or_newline = true;
+        self.expect_space();
+        self.possible_newline();
     }
 
     pub fn gen_expected_space(&mut self) -> PrintItems {
         let mut items = PrintItems::new();
         if !self.mode_no_space {
-            if self.expect_space_or_newline {
+            if self.expect_space && self.possible_newline {
                 items.push_signal(Signal::SpaceOrNewLine);
             } else if self.expect_space {
                 items.push_signal(Signal::SpaceIfNotTrailing);
+            } else if self.possible_newline {
+                items.push_signal(Signal::PossibleNewLine)
             }
         }
         self.reset_expect();
@@ -52,6 +59,6 @@ impl<'a> Context<'a> {
 
     pub fn reset_expect(&mut self) {
         self.expect_space = false;
-        self.expect_space_or_newline = false;
+        self.possible_newline = false;
     }
 }

@@ -61,10 +61,16 @@ pub fn if_not_start_of_line(then: PrintItems) -> PrintItems {
     items
 }
 
+pub fn indent_if_multiline(items: PrintItems) -> PrintItems {
+    let mut multiline = MultiLineGroup::new(false, 1);
+    multiline.extend(items);
+    multiline.take()
+}
+
 /// Group of optional linebreaks that break all or none
 pub struct MultiLineGroup {
     resolver: ConditionResolver,
-    start_ln: LineNumber,
+    _start_ln: LineNumber,
     end_ln: LineNumber,
     indent: u32,
     items: PrintItems,
@@ -90,7 +96,7 @@ impl MultiLineGroup {
 
         Self {
             resolver,
-            start_ln,
+            _start_ln: start_ln,
             end_ln,
             indent,
             items,

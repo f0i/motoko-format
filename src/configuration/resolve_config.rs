@@ -34,9 +34,7 @@ pub fn resolve_config(
         line_width: get_value(
             &mut config,
             "lineWidth",
-            global_config
-                .line_width
-                .unwrap_or(RECOMMENDED_GLOBAL_CONFIGURATION.line_width),
+            global_config.line_width.unwrap_or(80),
             &mut diagnostics,
         ),
         new_line_kind: get_value(

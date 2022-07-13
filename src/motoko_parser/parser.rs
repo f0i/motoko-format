@@ -92,6 +92,7 @@ make_node_types! {
     Exp,
     ExpBin,
     ExpBinContinue,
+    ExpNest,
     ExpList,
     ExpNonDec,
     ExpNonVar,
