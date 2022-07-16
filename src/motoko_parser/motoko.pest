@@ -352,7 +352,7 @@ ExpNonDec = {
   | KeywordBreak ~ Id ~ ExpNullary?
   | KeywordContinue ~ Id
   | KeywordDebug ~ ExpNest
-  | KeywordDo ~ "?"? ~ Block
+  | KeywordDo ~ Questionmark? ~ Block
   | KeywordFor ~ "(" ~ Pattern ~ KeywordIn ~ Exp ~ ")" ~ ExpNest
   | KeywordIf ~ ExpNullary ~ ExpNest ~ (KeywordElse ~ ExpNest)?
   | KeywordIgnore ~ ExpNest
@@ -418,9 +418,9 @@ ExpUn = {
 // Sample matches: Id, "[]", "{" Id "}", "{}", Id Id Id
 ExpPost = {
   ( BracketOpen ~ ExpPost ~ BracketClose
-    | "[" ~ KeywordVar?
+    | SquareBracketOpen ~ KeywordVar?
     ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
-    ~ "]" // Arrays
+    ~ SquareBracketClose // Arrays
     | ExpNullary
   )
   ~ ExpPostContinue* // TODO: was ? now *. check

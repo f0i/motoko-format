@@ -61,10 +61,12 @@ pub fn if_not_start_of_line(then: PrintItems) -> PrintItems {
     items
 }
 
-pub fn indent_if_multiline(items: PrintItems) -> PrintItems {
-    let mut multiline = MultiLineGroup::new(false, 1);
-    multiline.extend(items);
-    multiline.take()
+pub fn with_queued_indent_times(items: PrintItems, times: u32) -> PrintItems {
+    let mut items = items;
+    for _ in 0..times {
+        items = ir_helpers::with_queued_indent(items);
+    }
+    items
 }
 
 /// Group of optional linebreaks that break all or none
@@ -73,13 +75,19 @@ pub struct MultiLineGroup {
     _start_ln: LineNumber,
     end_ln: LineNumber,
     indent: u32,
+    queue_indent: bool,
     items: PrintItems,
 }
 
 impl MultiLineGroup {
-    pub fn new(force_multi_line: bool, indent: u32) -> Self {
-        let start_ln = LineNumber::new("multi_line_start");
-        let end_ln = LineNumber::new("multi_line_end");
+    pub fn new(
+        force_multi_line: bool,
+        indent: u32,
+        queue_indent: bool,
+        info: &'static str,
+    ) -> Self {
+        let start_ln = LineNumber::new(info);
+        let end_ln = LineNumber::new(info);
         let _ = LineNumber::new("unused");
         let resolver = Rc::new(move |condition_context: &mut ConditionResolverContext| {
             if force_multi_line {
@@ -99,6 +107,7 @@ impl MultiLineGroup {
             _start_ln: start_ln,
             end_ln,
             indent,
+            queue_indent,
             items,
         }
     }
@@ -119,7 +128,16 @@ impl MultiLineGroup {
         self.items.push_info(self.end_ln);
         self.items.push_signal(Signal::FinishNewLineGroup);
 
-        ir_helpers::with_indent_times(self.items, self.indent)
+        let rc_path = self.items.into_rc_path();
+
+        let indented = if self.queue_indent {
+            with_queued_indent_times(rc_path.into(), self.indent)
+        } else {
+            ir_helpers::with_indent_times(rc_path.into(), self.indent)
+        };
+
+        //conditions::if_true_or("indented", self.resolver, indented, not_indented).into()
+        indented
     }
 
     pub fn space_or_newline(&mut self) {

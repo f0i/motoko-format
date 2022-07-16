@@ -1,12 +1,12 @@
-== (skip) should format ==
-module {
-  public func e(m : List<Bool>) : List<Bool> {
-    let input = List.append();
-  }
-}
+== should format ==
+func PopulateUserStore(principal: Principal): UserStore.UserStore {
+    for (i in Iter.fromArray(permutation)) {
+        let key = dev_keys[i];
+ };
+};
 [expect]
-module {
-  public func e(m : List<Bool>) : List<Bool> {
-    let input = List.append();
+func PopulateUserStore(principal : Principal) : UserStore.UserStore {
+  for (i in Iter.fromArray(permutation)) {
+    let key = dev_keys[i];
   };
 };
