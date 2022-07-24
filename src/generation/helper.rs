@@ -16,10 +16,21 @@ pub fn gen_newlines(n: usize) -> PrintItems {
     items
 }
 
-pub fn is_whitespace_or_comment(node: &Node) -> bool {
+pub fn is_whitespace(node: &Node) -> bool {
     match node.node_type {
         NodeType::WHITESPACE => true,
+        _ => false,
+    }
+}
+
+pub fn is_whitespace_or_comment(node: &Node) -> bool {
+    is_whitespace(node) || is_comment(node)
+}
+
+pub fn is_comment(node: &Node) -> bool {
+    match node.node_type {
         NodeType::Comment => true,
+        NodeType::COMMENT => true,
         _ => false,
     }
 }
@@ -33,10 +44,10 @@ pub fn is_ignored(node: &Node) -> bool {
     }
 }
 
-pub fn count_not_ignored(nodes: &Vec<Node>) -> usize {
+pub fn count_not_ignored_or_comment(nodes: &Vec<Node>) -> usize {
     let mut count = 0;
     for node in nodes {
-        if !is_ignored(node) {
+        if !is_ignored(node) && !is_whitespace_or_comment(node) {
             count += 1;
         }
     }
@@ -136,18 +147,17 @@ impl MultiLineGroup {
             ir_helpers::with_indent_times(rc_path.into(), self.indent)
         };
 
-        //conditions::if_true_or("indented", self.resolver, indented, not_indented).into()
         indented
     }
 
-    pub fn space_or_newline(&mut self) {
+    pub fn _space_or_newline(&mut self) {
         let newline = Signal::NewLine.into();
         let space = Signal::SpaceOrNewLine.into();
         self.if_multiline_or(newline, space);
     }
 
     pub fn possible_newline(&mut self) {
-        let newline = Signal::NewLine.into();
+        let newline: PrintItems = Signal::NewLine.into();
         let possible = Signal::PossibleNewLine.into();
         self.if_multiline_or(newline, possible);
     }

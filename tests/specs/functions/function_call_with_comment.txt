@@ -1,0 +1,4 @@
+== should format ==
+a.go(1/*comment*/,2);
+[expect]
+a.go( 1 /* comment */, 2 );

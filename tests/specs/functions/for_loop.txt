@@ -1,0 +1,14 @@
+== should format ==
+func PopulateUserStore(principal: Principal): UserStore.UserStore {
+    for (i in Iter.fromArray(permutation)) {
+        let key = dev_keys[i];
+        let key = dev_keys[i];
+ };
+};
+[expect]
+func PopulateUserStore(principal : Principal) : UserStore.UserStore {
+  for (i in Iter.fromArray(permutation)) {
+    let key = dev_keys[i];
+    let key = dev_keys[i];
+  };
+};

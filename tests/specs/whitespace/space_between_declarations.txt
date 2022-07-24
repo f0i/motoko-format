@@ -1,0 +1,12 @@
+== should format ==
+1; // c
+
+
+2
+
+
+[expect]
+1;  // c
+
+
+2;

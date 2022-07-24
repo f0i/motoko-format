@@ -1,0 +1,8 @@
+== should format ==
+module {
+  type List<T> = List.List<T>;
+}
+[expect]
+module {
+  type List<T> = List.List<T>;
+};

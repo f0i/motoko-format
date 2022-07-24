@@ -61,4 +61,3 @@ import Connectd "canister:connectd";
 import List "mo:base/List:";
 import Sequence "mo:collections/List";
 import L "mo:base/List";
-

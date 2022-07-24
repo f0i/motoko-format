@@ -61,21 +61,17 @@ Header = ${
   ~ (Comment ~ ShouldNewline)?
 }
 Program = {
-  CompleteImport* ~ LastImport?
-  ~ CompleteDeclaration*
+  ImportList ~ DeclarationList
+  ~ COMMENT? // hack to collect all tailing whitespace and comments
 }
 
-
-CompleteImport = { Import ~ EndOfImport }
-LastImport = { Import ~ ShouldNewline }
-EndOfImport = ${ Semicolon ~ ShouldNewline }
-EndOfDeclaration = ${
-  ( Semicolon | EOI )
-  ~ ShouldNewline
+ImportList = {
+  /*List*/(Import ~ (Semicolon ~ Import)* ~ Semicolon?)?
 }
 
-CompleteDeclaration = { Declaration ~ EndOfDeclaration }
-
+DeclarationList = {
+  /*List*/(Declaration ~ (Semicolon ~ Declaration)* ~ Semicolon?)?
+}
 
 InvalidPart = { (!Semicolon ~ ANY)+ ~ Semicolon?}
 
@@ -179,7 +175,7 @@ PatternPlain = {
 
 PatternUn = {
   "#" ~ Id ~ PatternNullary?
-  | "?" ~ PatternUn
+  | Questionmark ~ PatternUn
   | UnOp ~ Lit
   | PatternNullary
   | "(" ~ PatternUn ~ ")"
@@ -252,8 +248,8 @@ TypeArgs = {
 }
 
 TypeField = {
-  "var"? ~ Id ~ ":" ~ Type
-  | Id ~ TypeBindList? ~ TypeNullary ~ ":" ~ Type
+  KeywordVar? ~ Id ~ Colon ~ Type
+  | Id ~ TypeBindList? ~ TypeNullary ~ Colon ~ Type
 }
 
 TypeBindList = {
@@ -403,16 +399,16 @@ BinAssign = @{
 // Sample matches: Id, "[]"
 ExpUn = {
     Questionmark ~ ExpUn
-    | "actor" ~ ExpPlain
-    | "not" ~ ExpUn
-    | "debug_show" ~ ExpUn
-    | "to_candid" ~ ExpList
-    | "from_candid" ~ ExpUn
+    | KeywordActor ~ ExpPlain
+    | KeywordNot ~ ExpUn
+    | KeywordDebugShow ~ ExpUn
+    | KeywordToCandid ~ ExpList
+    | KeywordFromCandid ~ ExpUn
     | "#" ~ Id ~ ExpNullary?
     | UnOp ~ ExpUn
     | UnAssign ~ ExpUn
     | ExpPost
-    | "(" ~ ExpUn ~ ")"
+    | BracketOpen ~ ExpUn ~ BracketClose
 }
 
 // Sample matches: Id, "[]", "{" Id "}", "{}", Id Id Id

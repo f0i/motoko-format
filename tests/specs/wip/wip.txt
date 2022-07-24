@@ -1,12 +1,10 @@
 == should format ==
-func PopulateUserStore(principal: Principal): UserStore.UserStore {
-    for (i in Iter.fromArray(permutation)) {
-        let key = dev_keys[i];
- };
-};
+1 ;// 2
+3;
+//4
+5; // 6
 [expect]
-func PopulateUserStore(principal : Principal) : UserStore.UserStore {
-  for (i in Iter.fromArray(permutation)) {
-    let key = dev_keys[i];
-  };
-};
+1;  // 2
+3;
+// 4
+5;  // 6

@@ -1,0 +1,10 @@
+== should format ==
+a.go( );
+a.go(1 );
+a.go(1 ,2);
+asdf
+[expect]
+a.go();
+a.go(1);
+a.go( 1, 2 );
+asdf;

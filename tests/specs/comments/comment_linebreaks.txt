@@ -1,0 +1,30 @@
+== should format ==
+func P () {
+    for (i in iter) {
+        123;
+    // asdf
+ };
+ // qwer
+};
+
+// test
+func Q () {
+    for (j in iter2) {
+        234;    // asdf2
+ }; // qwer2
+};// test2
+[expect]
+func P() {
+  for (i in iter) {
+    123;
+    // asdf
+  };
+  // qwer
+};
+
+// test
+func Q() {
+  for (j in iter2) {
+    234;  // asdf2
+  };  // qwer2
+};  // test2

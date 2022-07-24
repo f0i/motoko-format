@@ -49,11 +49,11 @@ impl<'a> Context<'a> {
         if_not_start_of_line(items)
     }
 
-    pub fn start_no_space(&mut self) {
+    pub fn _start_no_space(&mut self) {
         self.mode_no_space = true;
     }
 
-    pub fn finish_no_space(&mut self) {
+    pub fn _finish_no_space(&mut self) {
         self.mode_no_space = false;
     }
 
