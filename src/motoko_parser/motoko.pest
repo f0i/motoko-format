@@ -79,13 +79,16 @@ Semicolon = @{ ";" }
 EqualSign = @{ "=" }
 Colon = @{ ":" }
 Dot = @{ "." }
-BracketOpen = @{ "(" }
-BracketClose = @{ ")" }
+RoundBracketOpen = @{ "(" }
+RoundBracketClose = @{ ")" }
+CurlyBracketOpen = @{ "{" }
+CurlyBracketClose = @{ "}" }
 SquareBracketOpen = @{ "[" }
 SquareBracketClose = @{ "]" }
 AngleBracketOpen = @{ "<" }
 AngleBracketClose = @{ ">" }
 Questionmark = @{ "?" }
+HashTag = @{ "#" }
 
 Keyword = @{
     ("actor" | "and" | "assert" | "async" | "await" | "break" | "case" | "catch" | "class" | "continue" | "debug"
@@ -151,7 +154,7 @@ KeywordUnderscore = @{"_" ~ !IdContinue}
 // Imports
 Import = { KeywordImport ~ PatternNullary ~ EqualSign? ~ Text }
 PatternNullary = {
-  "{" ~ /*List*/ (PatternField  ~ (Semicolon ~ PatternField)* ~ Semicolon?)? ~ "}"
+  CurlyBracketOpen ~ /*List*/ (PatternField  ~ (Semicolon ~ PatternField)* ~ Semicolon?)? ~ CurlyBracketClose
   | PatternPlain
 }
 PatternField = {
@@ -160,11 +163,11 @@ PatternField = {
 Pattern = { PatternBin }
 PatternBin = {
   PatternUn ~ (KeywordOr ~ PatternBin)* ~ (Colon ~ Type)*
-  | BracketOpen ~ PatternBin ~ BracketClose
+  | RoundBracketOpen ~ PatternBin ~ RoundBracketClose
 }
 PatternPlain = {
   KeywordUnderscore
-  | BracketOpen ~ /*List*/(PatternBin ~ ("," ~ PatternBin)* ~ ","?)? ~ BracketClose
+  | RoundBracketOpen ~ /*List*/(PatternBin ~ ("," ~ PatternBin)* ~ ","?)? ~ RoundBracketClose
   | Lit
   | Id
   // TODO: check
@@ -174,7 +177,7 @@ PatternPlain = {
 }
 
 PatternUn = {
-  "#" ~ Id ~ PatternNullary?
+  HashTag ~ Id ~ PatternNullary?
   | Questionmark ~ PatternUn
   | UnOp ~ Lit
   | PatternNullary
@@ -231,7 +234,7 @@ TypeNullary = {
 TypeItem = { (Id ~ ":")? ~ Type }
 
 TypeVariant = {
-    "{" ~ "#" ~ "}"
+    "{" ~ HashTag ~ "}"
     | "{" ~ /*List1*/(TypeTag ~ (Semicolon ~ TypeTag)* ~ Semicolon?) ~ "}"
 }
 
@@ -240,7 +243,7 @@ TypeObj = {
 }
 
 TypeTag = {
-  "#" ~ Id ~ (":" ~ Type)?
+  HashTag ~ Id ~ (":" ~ Type)?
 }
 
 TypeArgs = {
@@ -323,6 +326,7 @@ Stability = { KeywordFlexible | KeywordStable }
 Exp = {
   DeclarationVar
   | ExpNonVar
+  // TODO!: TupleExp is more general than ParenthesizedExp and could cause performance issues (remove ParenthesizedExp?)
   | ParenthesizedExp
   | TupleExp // TODO!: not in spec! check!
 }
@@ -355,7 +359,7 @@ ExpNonDec = {
   | KeywordLabel ~ Id ~ (":" ~ Type)? ~ ExpNest
   | KeywordLoop ~ ExpNest ~ (KeywordWhile ~ ExpNest)?
   | KeywordReturn ~ Exp?
-  | KeywordSwitch ~ ExpNullary ~ "{" ~ /*List*/(Case ~ (Semicolon ~ Case)* ~ Semicolon?)? ~ "}"
+  | KeywordSwitch ~ ExpNullary ~ CurlyBracketOpen ~ /*List*/(Case ~ (Semicolon ~ Case)* ~ Semicolon?)? ~ CurlyBracketClose
   | KeywordThrow ~ ExpNest
   | KeywordTry ~ ExpNest ~ Catch
   | KeywordWhile ~ ExpNullary ~ ExpNest
@@ -404,16 +408,16 @@ ExpUn = {
     | KeywordDebugShow ~ ExpUn
     | KeywordToCandid ~ ExpList
     | KeywordFromCandid ~ ExpUn
-    | "#" ~ Id ~ ExpNullary?
+    | HashTag ~ Id ~ ExpNullary?
     | UnOp ~ ExpUn
     | UnAssign ~ ExpUn
     | ExpPost
-    | BracketOpen ~ ExpUn ~ BracketClose
+    | RoundBracketOpen ~ ExpUn ~ RoundBracketClose
 }
 
 // Sample matches: Id, "[]", "{" Id "}", "{}", Id Id Id
 ExpPost = {
-  ( BracketOpen ~ ExpPost ~ BracketClose
+  ( RoundBracketOpen ~ ExpPost ~ RoundBracketClose
     | SquareBracketOpen ~ KeywordVar?
     ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
     ~ SquareBracketClose // Arrays

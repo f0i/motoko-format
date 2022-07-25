@@ -47,6 +47,8 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
             gen_id(&node, context)
         }
 
+        TypeVariant => gen_list("{", ";", "}", &node.children, context, false, 1),
+
         PatternNullary => gen_pattern_nullary(&node, context),
         PatternPlain => gen_nodes_maybe_perenthesized(&node, context),
         Text => gen_id(&node, context),
@@ -65,8 +67,10 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         ExpNonDec => gen_exp_non_dec(&node, context),
 
         Exp | ExpNonVar | ExpPlain | ExpUn | ExpBin | ExpNullary | ExpNest | DeclarationField
-        | PatternUn | Type | TypeNoBin | TypeUn | TypeNullary | TypePre | ExpBinContinue
-        | SharedPattern | SharedPattern2 | ClassBody => gen_nodes(&node.children, context),
+        | Type | TypeNoBin | TypeUn | TypeNullary | TypePre | ExpBinContinue | SharedPattern
+        | SharedPattern2 | ClassBody | Case => gen_nodes(&node.children, context),
+
+        PatternUn => gen_nodes_no_space_between(&node.children, context),
 
         DeclarationNonVar => gen_declaration_non_var(&node, context),
 
@@ -83,18 +87,25 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         | KeywordNull | KeywordObject | KeywordOr | KeywordLabel | KeywordLet | KeywordLoop
         | KeywordPrivate | KeywordPublic | KeywordQuery | KeywordReturn | KeywordShared
         | KeywordStable | KeywordSwitch | KeywordSystem | KeywordThrow | KeywordToCandid
-        | KeywordTrue | KeywordTry | KeywordType | KeywordVar | KeywordWhile | Colon => {
+        | KeywordTrue | KeywordTry | KeywordType | KeywordVar | KeywordWhile => {
             gen_keyword(node, context)
         }
 
-        BinOp => {
+        Colon => {
+            context.expect_space();
+            gen_keyword(node, context)
+        }
+
+        HashTag | KeywordUnderscore => gen_id(node, context),
+
+        BinOp | RelOp => {
             context.possible_newline();
             gen_keyword(node, context)
         }
 
         Block | ObjBody => {
             let force_multiline = count_lines(&node.original) > 0;
-            gen_list("{", ";", "}", &node.children, context, force_multiline, 2)
+            gen_list("{", ";", "}", &node.children, context, force_multiline, 1)
         }
 
         FuncBody => gen_func_body(node, context),
@@ -274,11 +285,12 @@ fn gen_ignore(_node: &Node, _context: &mut Context) -> PrintItems {
 
 fn gen_keyword(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-    context.expect_space();
+    //context.expect_space();
     items.extend(context.gen_expected_space());
 
-    items.extend(gen_id(node, context));
+    items.extend(gen_id_trim(node, context));
     context.expect_space();
+    context.force_space();
     debug("gen_keyword", items)
 }
 
@@ -416,12 +428,30 @@ fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
 
     items.extend(context.gen_expected_space());
 
-    if node.get_one_child(&PatternField).is_some() {
-        items.extend(gen_list("{", ";", "}", &node.children, context, false, 1));
+    if node.has_child(&PatternField) {
+        assert!(node.is_surrounded_by(&CurlyBracketOpen, &CurlyBracketClose));
+        items.extend(gen_list(
+            "{",
+            ";",
+            "}",
+            &node.children_without_outer(),
+            context,
+            false,
+            1,
+        ));
     } else {
         items.extend(gen_nodes(&node.children, context))
     }
 
+    items
+}
+
+fn gen_nodes_no_space_between(nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    for n in nodes {
+        items.extend(gen_node(&n, context));
+        context.reset_expect();
+    }
     items
 }
 
@@ -629,6 +659,9 @@ fn gen_spaced_comment(node: &Node, context: &mut Context) -> PrintItems {
 }
 
 fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
+    if node.has_child(&KeywordSwitch) {
+        return gen_switch(node, context);
+    }
     let mut items = PrintItems::new();
     let is_for_loop = node.has_child(&KeywordFor);
     items.push_signal(Signal::QueueStartIndent);
@@ -675,11 +708,40 @@ fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
     items
 }
 
+fn gen_switch(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    let pre = node
+        .children
+        .iter()
+        .take_while(|n| n.node_type != CurlyBracketOpen);
+    let post: Vec<Node> = node
+        .children_without_outer()
+        .iter()
+        .skip_while(|n| n.node_type != CurlyBracketOpen)
+        .skip(1)
+        .map(|n| n.clone())
+        .collect();
+
+    for n in pre {
+        match n.node_type {
+            ExpNullary => {
+                context.force_space();
+                items.extend(gen_node(&n, context));
+            }
+            _ => items.extend(gen_node(&n, context)),
+        }
+    }
+
+    items.extend(gen_list("{", ";", "}", &post, context, true, 1));
+
+    items
+}
+
 fn gen_nodes_maybe_perenthesized(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     items.extend(context.gen_expected_space());
 
-    if node.is_surrounded_by(&BracketOpen, &BracketClose) {
+    if node.is_surrounded_by(&RoundBracketOpen, &RoundBracketClose) {
         // pharentesized
         items.extend(gen_list(
             "(",

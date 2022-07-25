@@ -1,10 +1,24 @@
 == should format ==
-1 ;// 2
-3;
-//4
-5; // 6
+func _() {
+if (f()) A else B;
+for (x in xs.vals()) { "..." };
+switch (compare(x, y)) {
+  case (#less) { A };
+  case (_) { B };
+};
+
+assert (x < 100);
+await (async (0));
+}
 [expect]
-1;  // 2
-3;
-// 4
-5;  // 6
+func _() {
+  if (f()) A else B;
+  for (x in xs.vals()) { "..." };
+  switch (compare( x, y )) {
+    case (#less) { A };
+    case (_) { B };
+  };
+
+  assert (x < 100);
+  await (async (0));
+};
