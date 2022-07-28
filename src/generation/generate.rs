@@ -42,10 +42,6 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         Declaration => gen_nodes(&node.children, context),
 
         Id => gen_id(&node, context),
-        EqualSign => {
-            context.expect_space();
-            gen_id(&node, context)
-        }
 
         TypeVariant => gen_list("{", ";", "}", &node.children, context, false, 1),
 
@@ -66,17 +62,19 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         PatternField => gen_pattern_field(&node, context),
         ExpNonDec => gen_exp_non_dec(&node, context),
 
-        Exp | ExpNonVar | ExpPlain | ExpUn | ExpBin | ExpNullary | ExpNest | DeclarationField
-        | Type | TypeNoBin | TypeUn | TypeNullary | TypePre | ExpBinContinue | SharedPattern
+        Exp | ExpNonVar | ExpPlain | ExpBin | ExpNullary | ExpNest | ExpPost | DeclarationField
+        | Type | TypeNoBin | TypeUn | TypePre | TypeItem | ExpBinContinue | SharedPattern
         | SharedPattern2 | ClassBody | Case => gen_nodes(&node.children, context),
 
-        PatternUn => gen_nodes_no_space_between(&node.children, context),
+        PatternUn | TypeTag => gen_nodes_no_space_between(&node.children, context),
+
+        ExpUn => gen_exp_un(node, context),
 
         DeclarationNonVar => gen_declaration_non_var(&node, context),
 
         ExpPostContinue => {
             context.reset_expect();
-            gen_nodes(&node.children, context)
+            gen_nodes_maybe_perenthesized(&node, context)
         }
 
         ObjSort | Visibility | KeywordActor | KeywordAnd | KeywordAssert | KeywordAsync
@@ -91,12 +89,12 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
             gen_keyword(node, context)
         }
 
-        Colon => {
+        Colon | Arrow | BinAssign | EqualSign => {
             context.expect_space();
             gen_keyword(node, context)
         }
 
-        HashTag | KeywordUnderscore => gen_id(node, context),
+        HashTag | KeywordUnderscore | Questionmark => gen_id(node, context),
 
         BinOp | RelOp => {
             context.possible_newline();
@@ -110,7 +108,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         FuncBody => gen_func_body(node, context),
 
-        ExpPost | PatternBin => gen_nodes_maybe_perenthesized(&node, context),
+        ExpPostFirst | PatternBin | TypeNullary => gen_nodes_maybe_perenthesized(&node, context),
         ExpList => {
             context.reset_expect();
             gen_list("(", ",", ")", &node.children, context, false, 2)
@@ -381,17 +379,60 @@ fn gen_should_newline(node: &Node, context: &mut Context) -> PrintItems {
 
 fn gen_declaration_non_var(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
+    //TODO: this is ugly. abstract it
+    items.push_signal(Signal::StartNewLineGroup);
+    items.push_signal(Signal::StartNewLineGroup);
+    items.push_signal(Signal::StartNewLineGroup);
+    items.push_signal(Signal::QueueStartIndent);
+    let mut indent = true;
+    let mut groups = 3;
 
     for n in node.children.iter() {
         match n.node_type {
+            ObjBody | FuncBody | ClassBody => {
+                if indent {
+                    items.push_signal(Signal::FinishIndent);
+                    indent = false;
+                }
+                items.extend(gen_node(n, context));
+            }
             PatternPlain => {
+                // Function parameter
                 context.reset_expect();
                 items.extend(gen_node(n, context));
+                if groups > 0 {
+                    groups -= 1;
+                    items.push_signal(Signal::FinishNewLineGroup);
+                }
+            }
+            Type => {
+                items.extend(gen_node(n, context));
+                if groups > 0 {
+                    groups -= 1;
+                    items.push_signal(Signal::FinishNewLineGroup);
+                }
+            }
+            EqualSign => {
+                items.extend(gen_node(n, context));
+                if groups > 0 {
+                    groups -= 1;
+                    items.push_signal(Signal::FinishNewLineGroup);
+                    items.push_signal(Signal::PossibleNewLine);
+                }
             }
             _ => {
                 items.extend(gen_node(n, context));
             }
         }
+    }
+
+    if indent {
+        items.push_signal(Signal::FinishIndent);
+    }
+
+    while groups > 0 {
+        groups -= 1;
+        items.push_signal(Signal::FinishNewLineGroup);
     }
 
     items
@@ -572,46 +613,6 @@ fn gen_list_body(
     items.take()
 }
 
-fn _gen_surounded(
-    start: &str,
-    end: &str,
-    nodes: &Vec<Node>,
-    context: &mut Context,
-    force_multiline: bool,
-) -> PrintItems {
-    let mut items = PrintItems::new();
-    let mut multiline = MultiLineGroup::new(force_multiline, 1, false, "gen_surounded");
-
-    items.extend(context.gen_expected_space());
-    items.push_str(start);
-
-    multiline.possible_newline();
-    context.expect_space_or_newline();
-
-    let mut any = false;
-    for n in nodes {
-        if is_ignored(n) {
-            // ignore
-        } else if is_whitespace_or_comment(n) {
-            multiline.extend(gen_node(n, context));
-            any = true;
-        } else {
-            multiline.extend(gen_node(n, context));
-            any = true;
-        }
-    }
-    if any {
-        multiline.push_signal(Signal::SpaceIfNotTrailing);
-        multiline.possible_newline();
-    } else {
-        // empty list
-    }
-    items.extend(multiline.take());
-    items.push_str(end);
-
-    items
-}
-
 fn gen_pattern_field(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     for n in node.children.iter() {
@@ -658,9 +659,20 @@ fn gen_spaced_comment(node: &Node, context: &mut Context) -> PrintItems {
     items
 }
 
+fn gen_exp_un(node: &Node, context: &mut Context) -> PrintItems {
+    if node.has_child(&HashTag) {
+        gen_nodes_no_space_between(&node.children, context)
+    } else {
+        gen_nodes(&node.children, context)
+    }
+}
+
 fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
     if node.has_child(&KeywordSwitch) {
         return gen_switch(node, context);
+    }
+    if node.has_child(&KeywordIf) {
+        return gen_if_statement(node, context);
     }
     let mut items = PrintItems::new();
     let is_for_loop = node.has_child(&KeywordFor);
@@ -670,8 +682,8 @@ fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
         match n.node_type {
             ColonEqual => {
                 // TODO: generalize or refactor
-                items.push_str(":=");
                 items.push_signal(Signal::SpaceOrNewLine);
+                items.push_str(":=");
             }
             Exp => {
                 if indent {
@@ -737,6 +749,14 @@ fn gen_switch(node: &Node, context: &mut Context) -> PrintItems {
     items
 }
 
+fn gen_if_statement(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = MultiLineGroup::new(false, 0, false, "if_statement");
+    for n in node.children.iter() {
+        items.extend(gen_node(&n, context));
+    }
+    items.take()
+}
+
 fn gen_nodes_maybe_perenthesized(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     items.extend(context.gen_expected_space());
@@ -775,15 +795,26 @@ fn gen_nodes_maybe_perenthesized(node: &Node, context: &mut Context) -> PrintIte
 fn gen_func_body(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
 
+    items.push_signal(Signal::StartNewLineGroup);
+    let mut indent = false;
     // child is either Exp or Block
     if node.has_child(&Exp) {
         // single expression
+        context.expect_space();
+        //items.push_signal(Signal::QueueStartIndent);
+        //indent = true;
+        items.extend(context.gen_expected_space());
         items.push_str("=");
+        context.expect_space_or_newline();
     } else {
         // block as function body
         assert!(node.has_child(&Block));
     }
     items.extend(gen_nodes(&node.children, context));
+    if indent {
+        items.push_signal(Signal::FinishIndent);
+    }
+    items.push_signal(Signal::FinishNewLineGroup);
 
     items
 }

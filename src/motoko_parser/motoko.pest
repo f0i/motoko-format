@@ -199,10 +199,12 @@ Type = {
 TypeNoBin = {
     // original: FuncSort? ~ TypeBindList? ~ TypeUn ~ "->" ~ TypeNoBin | TypePre
     // refactored for perfomance (avoid exponential recursion)
-    (FuncSort ~ TypeBindList? | TypeBindList) ~ TypeUn ~ "->" ~ TypeNoBin
-    | TypeUn ~ ("->" ~ TypeNoBin)?
+    (FuncSort ~ TypeBindList? | TypeBindList) ~ TypeUn ~ Arrow ~ TypeNoBin
+    | TypeUn ~ (Arrow ~ TypeNoBin)?
     | TypePre
 }
+
+Arrow = @{ "->" }
 
 FuncSort = {
   KeywordShared ~ KeywordQuery?
@@ -225,8 +227,8 @@ TypeUn = {
 }
 
 TypeNullary = {
-    "(" ~ /*List*/(TypeItem ~ ("," ~ TypeItem)* ~ ","?)? ~ ")"
-    | "[" ~ "var"? ~ Type ~ "]"
+    RoundBracketOpen ~ /*List*/(TypeItem ~ ("," ~ TypeItem)* ~ ","?)? ~ RoundBracketClose
+    | SquareBracketOpen ~ "var"? ~ Type ~ SquareBracketClose
     | TypeVariant
     | TypeObj
     | Id ~ (Dot ~ Id)* ~ TypeArgs?
@@ -243,7 +245,7 @@ TypeObj = {
 }
 
 TypeTag = {
-  HashTag ~ Id ~ (":" ~ Type)?
+  HashTag ~ Id ~ (Colon ~ Type)?
 }
 
 TypeArgs = {
@@ -417,13 +419,18 @@ ExpUn = {
 
 // Sample matches: Id, "[]", "{" Id "}", "{}", Id Id Id
 ExpPost = {
+  ExpPostFirst
+  ~ ExpPostContinue* // TODO: was ? now *. check
+}
+
+ExpPostFirst = {
   ( RoundBracketOpen ~ ExpPost ~ RoundBracketClose
     | SquareBracketOpen ~ KeywordVar?
     ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
     ~ SquareBracketClose // Arrays
     | ExpNullary
   )
-  ~ ExpPostContinue* // TODO: was ? now *. check
+
 }
 
 ExpPostContinue = {

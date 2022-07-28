@@ -1,0 +1,12 @@
+== should format ==
+
+module {
+
+  public func toIter(t : Text) : Iter.Iter<Char> =
+          return if (matchSize == 0) { t } else { fromIter(cs1) }
+        };
+[expect]
+module {
+  public func toIter(t : Text) : Iter.Iter<Char> =
+    return if (matchSize == 0) { t } else { fromIter(cs1) };
+};
