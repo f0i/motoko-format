@@ -64,7 +64,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         Exp | ExpNonVar | ExpPlain | ExpBin | ExpNullary | ExpNest | ExpPost | DeclarationField
         | Type | TypeNoBin | TypeUn | TypePre | TypeItem | ExpBinContinue | SharedPattern
-        | SharedPattern2 | ClassBody | Case => gen_nodes(&node.children, context),
+        | SharedPattern2 | ClassBody | Case | DeclarationVar => gen_nodes(&node.children, context),
 
         PatternUn | TypeTag => gen_nodes_no_space_between(&node.children, context),
 
@@ -94,7 +94,13 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
             gen_keyword(node, context)
         }
 
-        HashTag | KeywordUnderscore | Questionmark => gen_id(node, context),
+        HashTag | KeywordUnderscore => gen_id(node, context),
+
+        Questionmark => {
+            let i = gen_id(node, context);
+            context.reset_expect();
+            i
+        }
 
         BinOp | RelOp => {
             context.possible_newline();
@@ -378,14 +384,18 @@ fn gen_should_newline(node: &Node, context: &mut Context) -> PrintItems {
 }
 
 fn gen_declaration_non_var(node: &Node, context: &mut Context) -> PrintItems {
+    if node.has_child(&KeywordLet) {
+        return gen_let_statement(node, context);
+    }
     let mut items = PrintItems::new();
     //TODO: this is ugly. abstract it
     items.push_signal(Signal::StartNewLineGroup);
     items.push_signal(Signal::StartNewLineGroup);
     items.push_signal(Signal::StartNewLineGroup);
+    let mut groups = 3;
+
     items.push_signal(Signal::QueueStartIndent);
     let mut indent = true;
-    let mut groups = 3;
 
     for n in node.children.iter() {
         match n.node_type {
@@ -438,30 +448,20 @@ fn gen_declaration_non_var(node: &Node, context: &mut Context) -> PrintItems {
     items
 }
 
-fn _gen_declaration(node: &Node, context: &mut Context) -> PrintItems {
-    let mut items = PrintItems::new();
-    items.push_signal(Signal::StartNewLineGroup);
+fn gen_let_statement(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = MultiLineGroup::new(false, 1, true, "let_statement");
 
-    let mut semicolon = 0;
-    for (i, n) in node.children.iter().enumerate() {
-        semicolon = i;
+    for n in node.children.iter() {
         match n.node_type {
-            _ => {
-                items.extend(gen_node(n, context));
+            EqualSign => {
+                items.extend(gen_node(&n, context));
+                items.possible_newline();
             }
+            _ => items.extend(gen_node(&n, context)),
         }
     }
 
-    //items.push_str(";");
-    items.push_signal(Signal::FinishNewLineGroup);
-
-    for n in node.children.iter().skip(semicolon) {
-        match n.node_type {
-            _ => items.extend(gen_node(n, context)),
-        }
-    }
-
-    items
+    items.take()
 }
 
 fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
@@ -489,9 +489,12 @@ fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
 
 fn gen_nodes_no_space_between(nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-    for n in nodes {
+    let len = nodes.len();
+    for (i, n) in nodes.iter().enumerate() {
         items.extend(gen_node(&n, context));
-        context.reset_expect();
+        if i < (len - 1) {
+            context.reset_expect();
+        }
     }
     items
 }
@@ -660,11 +663,14 @@ fn gen_spaced_comment(node: &Node, context: &mut Context) -> PrintItems {
 }
 
 fn gen_exp_un(node: &Node, context: &mut Context) -> PrintItems {
-    if node.has_child(&HashTag) {
+    let items = if node.has_child(&HashTag) {
         gen_nodes_no_space_between(&node.children, context)
     } else {
         gen_nodes(&node.children, context)
-    }
+    };
+    context.expect_space();
+
+    items
 }
 
 fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
@@ -673,6 +679,9 @@ fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
     }
     if node.has_child(&KeywordIf) {
         return gen_if_statement(node, context);
+    }
+    if node.has_child(&KeywordLabel) {
+        return gen_label(node, context);
     }
     let mut items = PrintItems::new();
     let is_for_loop = node.has_child(&KeywordFor);
@@ -753,6 +762,20 @@ fn gen_if_statement(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = MultiLineGroup::new(false, 0, false, "if_statement");
     for n in node.children.iter() {
         items.extend(gen_node(&n, context));
+    }
+    items.take()
+}
+
+fn gen_label(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = MultiLineGroup::new(false, 0, false, "label");
+    for n in node.children.iter() {
+        match n.node_type {
+            ExpNest => {
+                items.possible_newline();
+                items.extend(gen_node(&n, context));
+            }
+            _ => items.extend(gen_node(&n, context)),
+        }
     }
     items.take()
 }

@@ -42,7 +42,7 @@ IdContinue = @{ ASCII_ALPHANUMERIC | "_" }
 // comments
 Comment = ${ ( DocComment | LineComment | BlockComment ) ~ SpacedComment? }
 SpacedComment = ${ WHITESPACE? ~ Comment }
-DocComment = ${ ("/// " ~ DocCommentContent ~ EOL)+ }
+DocComment = ${ (("/// " ~ DocCommentContent | "///") ~ EOL)+ }
 LineComment = ${ "//"  ~ LineCommentContent ~ EOL }
 BlockComment = ${ "/*" ~ " "? ~ BlockCommentContent ~ "*/" }
 DocCommentContent = @{ any_inline* }
@@ -222,18 +222,18 @@ ObjSort = { KeywordObject | KeywordActor | KeywordModule }
 TypeBind = { Id ~ ("<:" ~ Type)? }
 
 TypeUn = {
-  "?" ~ TypeUn
+  Questionmark ~ TypeUn
   | TypeNullary
 }
 
 TypeNullary = {
     RoundBracketOpen ~ /*List*/(TypeItem ~ ("," ~ TypeItem)* ~ ","?)? ~ RoundBracketClose
-    | SquareBracketOpen ~ "var"? ~ Type ~ SquareBracketClose
+    | SquareBracketOpen ~ KeywordVar? ~ Type ~ SquareBracketClose
     | TypeVariant
     | TypeObj
     | Id ~ (Dot ~ Id)* ~ TypeArgs?
 }
-TypeItem = { (Id ~ ":")? ~ Type }
+TypeItem = { (Id ~ Colon)? ~ Type }
 
 TypeVariant = {
     "{" ~ HashTag ~ "}"
@@ -273,7 +273,7 @@ Declaration = {
 }
 
 DeclarationVar = {
-  "var" ~ Id ~ (":" ~ Type)? ~ EqualSign ~ Exp
+  KeywordVar ~ Id ~ (Colon ~ Type)? ~ EqualSign ~ Exp
 }
 
 DeclarationNonVar = {
@@ -287,8 +287,8 @@ DeclarationNonVar = {
   | SharedPattern2? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (Colon ~ Type)? ~ FuncBody
   | SharedPattern? ~ KeywordFunc ~ Id ~ TypeBindList? ~ PatternPlain ~ (Colon ~ Type)? ~ FuncBody
   // class
-  | SharedPattern2? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
-  | SharedPattern? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (":" ~ Type)? ~ ClassBody
+  | SharedPattern2? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (Colon ~ Type)? ~ ClassBody
+  | SharedPattern? ~ ObjSort? ~ KeywordClass ~ Id?  ~ TypeBindList?  ~ PatternPlain ~ (Colon ~ Type)? ~ ClassBody
 }
 
 ClassBody = {
@@ -358,7 +358,7 @@ ExpNonDec = {
   | KeywordFor ~ "(" ~ Pattern ~ KeywordIn ~ Exp ~ ")" ~ ExpNest
   | KeywordIf ~ ExpNullary ~ ExpNest ~ (KeywordElse ~ ExpNest)?
   | KeywordIgnore ~ ExpNest
-  | KeywordLabel ~ Id ~ (":" ~ Type)? ~ ExpNest
+  | KeywordLabel ~ Id ~ (Colon ~ Type)? ~ ExpNest
   | KeywordLoop ~ ExpNest ~ (KeywordWhile ~ ExpNest)?
   | KeywordReturn ~ Exp?
   | KeywordSwitch ~ ExpNullary ~ CurlyBracketOpen ~ /*List*/(Case ~ (Semicolon ~ Case)* ~ Semicolon?)? ~ CurlyBracketClose
@@ -462,7 +462,7 @@ ExpObj = {
 }
 
 ExpField = {
-  "var"? ~ Id ~ (":" ~Type)? ~ ("=" ~ Exp)?
+  KeywordVar? ~ Id ~ (":" ~Type)? ~ ("=" ~ Exp)?
 }
 
 UnAssign = { "+=" | "-=" | "^=" }

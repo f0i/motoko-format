@@ -1,0 +1,16 @@
+== should format ==
+actor {
+  switch state {
+    case (0 or 1) {
+    };
+  };
+};
+
+[expect]
+actor {
+  switch state {
+    case (0 or 1) {
+
+    };
+  };
+};
