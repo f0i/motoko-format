@@ -1,0 +1,20 @@
+== (skip) should format ==
+module {
+  func compareWith(
+    t1 : Text,
+     //
+     cmp :  Char 
+  ) {
+    }
+};
+
+[expect]
+module {
+  func compareWith(
+      t1 : Text,
+      //
+      cmp : Char,
+    ) {
+
+  };
+};

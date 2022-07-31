@@ -2,7 +2,7 @@ use crate::motoko_parser::{Node, NodeType};
 use dprint_core::formatting::*;
 use std::rc::Rc;
 
-pub fn count_lines(s: &String) -> usize {
+pub fn count_newlines(s: &String) -> usize {
     s.matches("\n").count()
 }
 
@@ -88,6 +88,7 @@ pub struct MultiLineGroup {
     indent: u32,
     queue_indent: bool,
     items: PrintItems,
+    info: String,
 }
 
 impl MultiLineGroup {
@@ -120,6 +121,7 @@ impl MultiLineGroup {
             indent,
             queue_indent,
             items,
+            info: info.into(),
         }
     }
 
@@ -137,6 +139,7 @@ impl MultiLineGroup {
 
     pub fn take(mut self) -> PrintItems {
         self.items.push_info(self.end_ln);
+        self.items.push_anchor(LineNumberAnchor::new(self.end_ln));
         self.items.push_signal(Signal::FinishNewLineGroup);
 
         let rc_path = self.items.into_rc_path();
@@ -170,5 +173,9 @@ impl MultiLineGroup {
 
     pub fn if_multiline(&mut self, multi: PrintItems) {
         self.if_multiline_or(multi, PrintItems::new());
+    }
+
+    pub fn debug(&mut self, s: &str) {
+        self.extend(format!("~{}~", self.info).into())
     }
 }

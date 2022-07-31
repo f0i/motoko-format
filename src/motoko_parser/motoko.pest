@@ -435,11 +435,15 @@ ExpPostFirst = {
 
 ExpPostContinue = {
   ExpPost
-  | "[" ~ Exp ~ "]"
+  | SquareBracketOpen ~ Exp ~ SquareBracketClose
   | Dot ~ Nat
   | Dot ~ Id
-  | ("<" ~ /*List*/(Type ~("," ~ Type)* ~ ","?)? ~ ">")? ~ ExpNullary
+  | ExpPostList? ~ ExpNullary
   | BANG
+}
+
+ExpPostList = {
+  AngleBracketOpen ~ /*List*/(Type ~("," ~ Type)* ~ ","?)? ~ AngleBracketClose
 }
 
 BANG = @{ "!" ~ !"=" }

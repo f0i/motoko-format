@@ -1,0 +1,24 @@
+== should format ==
+actor {
+  type Match = { 
+    #fail; // asdf
+     #empty;
+     //qwer
+    #fail
+     };
+     
+  public type Pattern = { #char : Char; #text : Text; #predicate : (Char -> Bool) }; };
+
+[expect]
+actor {
+  type Match = {
+    #fail;  // asdf
+    #empty;
+    // qwer
+    #fail;
+  };
+
+  public type Pattern = {
+    #char : Char; #text : Text; #predicate : (Char -> Bool)
+  };
+};

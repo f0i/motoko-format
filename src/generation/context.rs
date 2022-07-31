@@ -64,6 +64,10 @@ impl<'a> Context<'a> {
         self.mode_no_space = false;
     }
 
+    pub fn reset_possible_newline(&mut self) {
+        self.possible_newline = false;
+    }
+
     pub fn reset_expect(&mut self) {
         self.expect_space = false;
         self.possible_newline = false;

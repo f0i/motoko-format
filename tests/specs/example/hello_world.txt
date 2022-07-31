@@ -1,4 +1,4 @@
-== (skip) should format ==
+== should format ==
 /// Hello world
 import { find; foldLeft = fold } = "mo:base/Array";
 import { map } = "mo:base/Array";

@@ -1,0 +1,14 @@
+== should format ==
+module {
+  func compareWith( t1 : Text,
+  ) {
+    x :=((x << 5) +% x) +% c;
+    }
+};
+
+[expect]
+module {
+  func compareWith(t1 : Text) {
+    x := ((x << 5) +% x) +% c;
+  };
+};

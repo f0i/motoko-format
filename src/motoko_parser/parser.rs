@@ -104,6 +104,7 @@ make_node_types! {
     ExpPost,
     ExpPostFirst,
     ExpPostContinue,
+    ExpPostList,
     ExpUn,
     FuncBody,
     BinOp,
