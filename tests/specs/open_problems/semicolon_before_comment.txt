@@ -1,7 +1,7 @@
-== should format ==
+== (skip) should format ==
 module {
-
-}; // asdf
+  
+} // asdf
 // Comment after last statment
 // qwer
 

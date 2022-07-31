@@ -76,6 +76,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         Exp | ExpNonVar | ExpPlain | ExpBin | ExpNullary | ExpNest | ExpPost | DeclarationField
         | Type | TypeNoBin | TypeUn | TypePre | TypeItem | ExpBinContinue | SharedPattern
         | SharedPattern2 | ClassBody | Case | DeclarationVar => gen_nodes(&node.children, context),
+        Catch => gen_catch(&node, context),
 
         PatternUn | TypeTag => gen_nodes_no_space_between(&node.children, context),
 
@@ -515,6 +516,14 @@ fn gen_nodes_no_space_between(nodes: &Vec<Node>, context: &mut Context) -> Print
             context.reset_expect();
         }
     }
+    items
+}
+
+fn gen_catch(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    context.reset_expect();
+    items.push_signal(Signal::ExpectNewLine);
+    items.extend(gen_nodes(&node.children, context));
     items
 }
 

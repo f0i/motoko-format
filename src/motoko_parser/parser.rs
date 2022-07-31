@@ -111,6 +111,7 @@ make_node_types! {
     BinAssign,
     RelOp,
     Case,
+    Catch,
     TypeBindList,
     ColonEqual,
     Dot,
