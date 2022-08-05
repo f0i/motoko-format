@@ -106,6 +106,8 @@ make_node_types! {
     ExpPostContinue,
     ExpPostList,
     ExpUn,
+    ExpObj,
+    ExpField,
     FuncBody,
     BinOp,
     BinAssign,
@@ -256,6 +258,17 @@ impl Node {
 
     pub fn has_child(&self, node_type: &NodeType) -> bool {
         self.get_one_child(node_type).is_some()
+    }
+
+    pub fn starts_with(&self, node_type: &NodeType) -> bool {
+        if self.node_type == *node_type {
+            return true;
+        }
+        if let Some(n) = self.children.first() {
+            n.starts_with(node_type)
+        } else {
+            false
+        }
     }
 
     pub fn is_first_child(&self, node_type: &NodeType) -> bool {

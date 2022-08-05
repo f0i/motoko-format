@@ -1,13 +1,14 @@
 == should format ==
-module {
-
-}; // asdf
-// Comment after last statment
-// qwer
+import U "";
+// 
+//func t = {};
+1;
+2;
 
 [expect]
-module {
+import U "";
 
-};  // asdf
-// Comment after last statment
-// qwer
+//
+// func t = {};
+1;
+2;

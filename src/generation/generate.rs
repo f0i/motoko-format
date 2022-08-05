@@ -68,7 +68,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         DocCommentContent => gen_id_trim(&node, context),
         BlockCommentContent => gen_id_multiline(&node, context),
         SpacedComment => gen_spaced_comment(&node, context),
-        Lit => gen_id(&node, context),
+        Lit | Nat => gen_id(&node, context),
         ShouldNewline => gen_should_newline(&node, context),
         PatternField => gen_pattern_field(&node, context),
         ExpNonDec => gen_exp_non_dec(&node, context),
@@ -119,10 +119,12 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
             gen_keyword(node, context)
         }
 
-        Block | ObjBody => {
+        Block | ObjBody | ExpObj => {
             let force_multiline = count_newlines(&node.original) > 0;
             gen_list("{", ";", "}", &node.children, context, force_multiline, 1)
         }
+
+        ExpField => gen_exp_field(node, context),
 
         FuncBody => gen_func_body(node, context),
 
@@ -144,7 +146,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         Pattern => gen_id_trim(&node, context), // TODO
         // TODO: remove to handle all cases
-        //_ => gen_id(&node, context),
+        // => gen_id(&node, context),
         _ => gen_debug(node, context),
     });
     items
@@ -721,10 +723,16 @@ fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
     let force_multiline = count_newlines(&node.original) > 0;
     let mut items = MultiLineGroup::new(force_multiline, 0, true, "exp_non_dec");
     let is_for_loop = node.has_child(&KeywordFor);
-    items.push_signal(Signal::QueueStartIndent);
-    let mut indent = true;
+    let mut indent = false;
     for n in node.children.iter() {
         match n.node_type {
+            KeywordReturn => {
+                items.extend(gen_node(n, context));
+                if !indent {
+                    items.push_signal(Signal::StartIndent);
+                    indent = true;
+                }
+            }
             ColonEqual => {
                 // TODO: generalize or refactor
                 items.push_signal(Signal::SpaceOrNewLine);
@@ -733,7 +741,7 @@ fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
                 context.force_space();
             }
             Exp => {
-                if indent {
+                if indent && n.starts_with(&CurlyBracketOpen) {
                     items.push_signal(Signal::FinishIndent);
                     indent = false;
                 }
@@ -797,9 +805,19 @@ fn gen_switch(node: &Node, context: &mut Context) -> PrintItems {
 }
 
 fn gen_if_statement(node: &Node, context: &mut Context) -> PrintItems {
-    let mut items = MultiLineGroup::new(false, 0, false, "if_statement");
+    let mut items = MultiLineGroup::new(false, 0, true, "if_statement");
+
     for n in node.children.iter() {
-        items.extend(gen_node(&n, context));
+        match n.node_type {
+            ExpNest => {
+                if n.has_child(&Block) {
+                    items.extend(gen_node(&n, context))
+                } else {
+                    items.extend(ir_helpers::with_indent(gen_node(&n, context)))
+                }
+            }
+            _ => items.extend(gen_node(&n, context)),
+        }
     }
     items.take()
 }
@@ -880,6 +898,22 @@ fn gen_nodes_maybe_perenthesized(node: &Node, context: &mut Context) -> PrintIte
     items
 }
 
+fn gen_exp_field(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    for n in node.children.iter() {
+        match n.node_type {
+            Type => {
+                items.extend(context.gen_expected_space());
+                items.push_str(":");
+                context.expect_space();
+                items.extend(gen_node(&n, context));
+            }
+            _ => items.extend(gen_node(&n, context)),
+        }
+    }
+    items
+}
+
 fn gen_func_body(node: &Node, context: &mut Context) -> PrintItems {
     let force_multiline = count_newlines(&node.original) > 0;
     let mut items = MultiLineGroup::new(force_multiline, 0, false, "func_body");
@@ -894,7 +928,7 @@ fn gen_func_body(node: &Node, context: &mut Context) -> PrintItems {
         indent = true;
         items.extend(context.gen_expected_space());
         items.push_str("=");
-        items.possible_newline();
+        items.possible_newline(); // TODO: only add newline if next element is not perenthesized multiline
         context.expect_space_or_newline();
     } else {
         // block as function body
