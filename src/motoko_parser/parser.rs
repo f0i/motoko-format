@@ -87,6 +87,8 @@ make_node_types! {
     TypeArgs,
     TypeItem,
     TypeBind,
+    TypeObj,
+    TypeField,
     DeclarationVar,
     DeclarationNonVar,
     ClassBody,

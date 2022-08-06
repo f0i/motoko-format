@@ -466,10 +466,10 @@ ExpObj = {
 }
 
 ExpField = {
-  KeywordVar? ~ Id ~ (":" ~Type)? ~ ("=" ~ Exp)?
+  KeywordVar? ~ Id ~ (Colon ~Type)? ~ (EqualSign ~ Exp)?
 }
 
-UnAssign = { "+=" | "-=" | "^=" }
+UnAssign = @{ "+=" | "-=" | "^=" }
 
 ExpList = {
   "(" ~ /*List*/(Exp ~ ("," ~ Exp)* ~ ","?)? ~ ")"

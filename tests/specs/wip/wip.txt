@@ -1,14 +1,16 @@
 == should format ==
-import U "";
-// 
-//func t = {};
-1;
-2;
+actor InvoiceMock {
+    let res = await ecdsa_public_key({
+        canister_id = null;
+    });
+};
 
 [expect]
-import U "";
-
-//
-// func t = {};
-1;
-2;
+actor InvoiceMock {
+  let res =
+    await ecdsa_public_key(
+      {
+        canister_id = null;
+      },
+    );
+};

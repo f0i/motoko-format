@@ -75,7 +75,9 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         Exp | ExpNonVar | ExpPlain | ExpBin | ExpNullary | ExpNest | ExpPost | DeclarationField
         | Type | TypeNoBin | TypeUn | TypePre | TypeItem | ExpBinContinue | SharedPattern
-        | SharedPattern2 | ClassBody | Case | DeclarationVar => gen_nodes(&node.children, context),
+        | SharedPattern2 | ClassBody | Case | DeclarationVar | TypeField => {
+            gen_nodes(&node.children, context)
+        }
         Catch => gen_catch(&node, context),
 
         PatternUn | TypeTag => gen_nodes_no_space_between(&node.children, context),
@@ -119,7 +121,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
             gen_keyword(node, context)
         }
 
-        Block | ObjBody | ExpObj => {
+        Block | ObjBody | ExpObj | TypeObj => {
             let force_multiline = count_newlines(&node.original) > 0;
             gen_list("{", ";", "}", &node.children, context, force_multiline, 1)
         }
@@ -146,8 +148,8 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         Pattern => gen_id_trim(&node, context), // TODO
         // TODO: remove to handle all cases
-        // => gen_id(&node, context),
-        _ => gen_debug(node, context),
+        _ => gen_id_trim(&node, context),
+        //_ => gen_debug(node, context),
     });
     items
 }
