@@ -148,10 +148,10 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         WHITESPACE | Semicolon | EOI => gen_ignore(&node, context),
 
-        Pattern => gen_id_trim(&node, context), // TODO
+        Pattern => gen_id_trim_each(&node, context), // TODO
         // TODO: remove to handle all cases
         _ => gen_id_trim(&node, context),
-        //_ => gen_debug(node, context),
+        //_ => gen_debug(&node, context),
     });
     items
 }
@@ -277,6 +277,25 @@ fn gen_id_trim(node: &Node, context: &mut Context) -> PrintItems {
         }
         first = false;
         items.push_str(l);
+    }
+    context.expect_space();
+    items
+}
+
+fn gen_id_trim_each(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    let text = node.original.trim();
+    if !text.is_empty() {
+        items.extend(context.gen_expected_space());
+    }
+
+    let mut first = true;
+    for l in text.split("\n") {
+        if !first {
+            items.push_signal(Signal::NewLine);
+        }
+        first = false;
+        items.push_str(l.trim());
     }
     context.expect_space();
     items

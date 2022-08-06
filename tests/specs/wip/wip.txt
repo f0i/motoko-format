@@ -1,4 +1,13 @@
 == should format ==
+module {
+  public let call : (canister : Principal, name : Text, data : Blob) ->
+    async (reply : Blob) = Prim.call_raw;
 
+};
 
 [expect]
+module {
+  public let call : (canister : Principal, name : Text, data : Blob) ->
+    async (reply : Blob) =
+    Prim.call_raw;
+};
