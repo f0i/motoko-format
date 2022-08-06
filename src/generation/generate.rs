@@ -910,6 +910,7 @@ fn gen_exp_field(node: &Node, context: &mut Context) -> PrintItems {
                 context.expect_space();
                 items.extend(gen_node(&n, context));
             }
+            Colon => {}
             _ => items.extend(gen_node(&n, context)),
         }
     }
