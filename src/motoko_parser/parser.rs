@@ -101,6 +101,7 @@ make_node_types! {
     ExpList,
     ExpNonDec,
     ExpNonVar,
+    Var_ExpNonVar,
     ExpNullary,
     ExpPlain,
     ExpPost,

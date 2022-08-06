@@ -425,12 +425,16 @@ ExpPost = {
 
 ExpPostFirst = {
   ( RoundBracketOpen ~ ExpPost ~ RoundBracketClose
-    | SquareBracketOpen ~ KeywordVar?
-    ~ /*List*/(ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
+    | SquareBracketOpen ~ KeywordVar ~ SquareBracketClose // TODO: check if this is possible
+    | SquareBracketOpen
+    ~ /*List*/(Var_ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
     ~ SquareBracketClose // Arrays
     | ExpNullary
   )
+}
 
+Var_ExpNonVar = {
+  KeywordVar? ~ ExpNonVar
 }
 
 ExpPostContinue = {

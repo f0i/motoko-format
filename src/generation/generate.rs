@@ -75,12 +75,13 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         Exp | ExpNonVar | ExpPlain | ExpBin | ExpNullary | ExpNest | ExpPost | DeclarationField
         | Type | TypeNoBin | TypeUn | TypePre | TypeItem | ExpBinContinue | SharedPattern
-        | SharedPattern2 | ClassBody | Case | DeclarationVar | TypeField => {
+        | SharedPattern2 | ClassBody | Case | DeclarationVar | TypeField | Var_ExpNonVar => {
             gen_nodes(&node.children, context)
         }
         Catch => gen_catch(&node, context),
 
-        PatternUn | TypeTag => gen_nodes_no_space_between(&node.children, context),
+        PatternUn => gen_pattern_un(&node.children, context),
+        TypeTag => gen_nodes_no_space_between(&node.children, context),
 
         ExpUn => gen_exp_un(node, context),
 
@@ -130,7 +131,8 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         FuncBody => gen_func_body(node, context),
 
-        ExpPostFirst | PatternBin => gen_nodes_maybe_perenthesized(&node, context),
+        PatternBin | ExpPostFirst => gen_nodes_maybe_perenthesized(&node, context),
+
         TypeNullary => gen_type_nullary(&node, context),
         ExpList => {
             context.reset_expect();
@@ -511,13 +513,38 @@ fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
     items
 }
 
+fn gen_pattern_un(nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    for (i, n) in nodes.iter().enumerate() {
+        match n.node_type {
+            PatternUn => items.extend(gen_node(&n, context)),
+            PatternNullary => {
+                if n.starts_with(&RoundBracketOpen) {
+                    context.reset_expect();
+                }
+                items.extend(gen_node(&n, context))
+            }
+            _ => {
+                if !is_ignored(n) {
+                    if i > 0 {
+                        context.reset_expect();
+                    }
+                    items.extend(gen_node(&n, context));
+                }
+            }
+        }
+    }
+    items
+}
+
 fn gen_nodes_no_space_between(nodes: &Vec<Node>, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
-    let len = nodes.len();
     for (i, n) in nodes.iter().enumerate() {
-        items.extend(gen_node(&n, context));
-        if i < (len - 1) {
-            context.reset_expect();
+        if !is_ignored(n) {
+            if i > 0 {
+                context.reset_expect();
+            }
+            items.extend(gen_node(&n, context));
         }
     }
     items

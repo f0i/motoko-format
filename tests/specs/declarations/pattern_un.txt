@@ -1,0 +1,17 @@
+== should format ==
+actor InvoiceMock {
+  func asdf {
+    let array = [ var 1, 2, 3 ];
+  };
+};
+
+let _ = k(func(#A or #B _) = 0);
+
+[expect]
+actor InvoiceMock {
+  func asdf {
+    let array = [ var 1, 2, 3 ];
+  };
+};
+
+let _ = k(func (#A or #B _) = 0);
