@@ -431,7 +431,6 @@ fn gen_declaration_non_var(node: &Node, context: &mut Context) -> PrintItems {
     if node.has_child(&KeywordLet) {
         return gen_let_statement(node, context);
     }
-    let func_no_space = node.has_child(&KeywordFunc) && !node.has_child(&TypeBindList);
     let force_multiline = count_newlines(&node.original) > 0;
     let mut items = MultiLineGroup::new(force_multiline, 0, false, "dec_non_var");
     //TODO: this is ugly. abstract it
@@ -457,11 +456,6 @@ fn gen_declaration_non_var(node: &Node, context: &mut Context) -> PrintItems {
             PatternPlain => {
                 // Function parameter
                 context.reset_expect();
-                if func_no_space && n.is_surrounded_by(&RoundBracketOpen, &RoundBracketClose) {
-                    // hack to reset forced space (TODO: refactor)
-                    //context.gen_expected_space();
-                    // shold have space according to
-                }
                 items.extend(gen_node(n, context));
                 if groups > 0 {
                     groups -= 1;
