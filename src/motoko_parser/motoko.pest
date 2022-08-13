@@ -42,7 +42,13 @@ IdContinue = @{ ASCII_ALPHANUMERIC | "_" }
 // comments
 Comment = ${ ( DocComment | LineComment | BlockComment ) ~ SpacedComment? }
 SpacedComment = ${ WHITESPACE? ~ Comment }
-DocComment = ${ (("/// " ~ DocCommentContent | "///") ~ EOL)+ }
+DocComment = ${
+  (
+    (
+      ("/// " | "//! ") ~ DocCommentContent | "///"
+    ) ~ EOL
+  )+
+}
 LineComment = ${ "//"  ~ LineCommentContent ~ EOL }
 BlockComment = ${ "/*" ~ " "? ~ BlockCommentContent ~ "*/" }
 DocCommentContent = @{ any_inline* }

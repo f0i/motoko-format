@@ -1,0 +1,5 @@
+== should format ==
+//! convert doxygen style to doc comment
+
+[expect]
+/// convert doxygen style to doc comment

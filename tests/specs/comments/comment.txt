@@ -1,6 +1,6 @@
 == should format ==
 //one comment
-///   doc comment
+/// doc comment
 //// not doc comment
 
 /*         block  */
@@ -13,8 +13,8 @@
 
 import i "x.mo";
 /* block */
-import a "x.mo";  //   comment after Lit
-import b "x.mo"  //   comment before semicolon
+import a "x.mo";  //comment after Lit
+import b "x.mo"  // comment before semicolon
 ;
 
 [expect]

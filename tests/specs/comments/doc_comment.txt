@@ -1,5 +1,7 @@
 == should format ==
-import i ""; ///    doc
+import i ""; /// doc
+             /// another
 
 [expect]
 import i "";  /// doc
+/// another

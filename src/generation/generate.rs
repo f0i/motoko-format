@@ -64,8 +64,8 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         LineComment => gen_comment_line("//", &node, context),
         DocComment => gen_comment_line("///", &node, context),
         BlockComment => gen_comment_block(&node, context),
-        LineCommentContent => gen_id_trim(&node, context),
-        DocCommentContent => gen_id_trim(&node, context),
+        LineCommentContent => gen_id_trim_comment(&node, context),
+        DocCommentContent => gen_id_trim_comment(&node, context),
         BlockCommentContent => gen_id_multiline(&node, context),
         SpacedComment => gen_spaced_comment(&node, context),
         Lit | Nat => gen_id(&node, context),
@@ -268,6 +268,28 @@ fn gen_id_no_space(node: &Node, context: &mut Context) -> PrintItems {
 fn gen_id_trim(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     let text = node.original.trim();
+    if !text.is_empty() {
+        items.extend(context.gen_expected_space());
+    }
+
+    let mut first = true;
+    for l in text.split("\n") {
+        if !first {
+            items.push_signal(Signal::NewLine);
+        }
+        first = false;
+        items.push_str(l);
+    }
+    context.expect_space();
+    items
+}
+
+fn gen_id_trim_comment(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    let mut text = node.original.trim_end().to_string();
+    if text.starts_with(" ") {
+        text.remove(0);
+    }
     if !text.is_empty() {
         items.extend(context.gen_expected_space());
     }
