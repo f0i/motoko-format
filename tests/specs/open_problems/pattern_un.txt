@@ -1,4 +1,4 @@
-== (skip) should format ==
+== should format ==
 let _ = k(func (#A or #B _) = 0);
 
 [expect]

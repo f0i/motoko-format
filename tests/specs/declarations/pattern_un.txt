@@ -14,4 +14,4 @@ actor InvoiceMock {
   };
 };
 
-let _ = k(func (#A or #B _) = 0);
+let _ = k(func(#A or #B _) = 0);
