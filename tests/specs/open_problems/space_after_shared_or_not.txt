@@ -1,6 +1,7 @@
 == should format ==
 actor a {
 
+  // shold there be a space btween `shared` and `({})`?
   public shared({}) func c4(): async () { };
 
 
@@ -8,5 +9,6 @@ actor a {
 
 [expect]
 actor a {
+  // shold there be a space btween `shared` and `({})`?
   public shared ({}) func c4() : async () {};
 };

@@ -74,12 +74,13 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         ExpNonDec => gen_exp_non_dec(&node, context),
 
         Exp | ExpNonVar | ExpPlain | ExpBin | ExpNullary | ExpNest | ExpPost | DeclarationField
-        | Type | TypeNoBin | TypeUn | TypePre | TypeItem | ExpBinContinue | SharedPattern
-        | SharedPattern2 | ClassBody | Case | DeclarationVar | TypeField | Var_ExpNonVar => {
+        | Type | TypeNoBin | TypeUn | TypePre | TypeItem | ExpBinContinue | ClassBody | Case
+        | DeclarationVar | TypeField | Var_ExpNonVar | Stability | FuncSort => {
             gen_nodes(&node.children, context)
         }
         Catch => gen_catch(&node, context),
 
+        SharedPattern | SharedPattern2 => gen_shared_pattern(&node, context),
         PatternUn => gen_pattern_un(&node.children, context),
         TypeTag => gen_nodes_no_space_between(&node.children, context),
 
@@ -111,7 +112,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         HashTag | KeywordUnderscore => gen_id(node, context),
 
-        Questionmark => {
+        Questionmark | UnOp => {
             let i = gen_id(node, context);
             context.reset_expect();
             i
@@ -148,7 +149,8 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         WHITESPACE | Semicolon | EOI => gen_ignore(&node, context),
 
-        Pattern => gen_id_trim_each(&node, context), // TODO
+        Pattern => gen_nodes(&node.children, context),
+
         // TODO: remove to handle all cases
         _ => gen_id_trim(&node, context),
         //_ => gen_debug(&node, context),
@@ -514,8 +516,7 @@ fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
 
     items.extend(context.gen_expected_space());
 
-    if node.has_child(&PatternField) {
-        assert!(node.is_surrounded_by(&CurlyBracketOpen, &CurlyBracketClose));
+    if node.is_surrounded_by(&CurlyBracketOpen, &CurlyBracketClose) {
         items.extend(gen_list(
             "{",
             ";",
@@ -529,6 +530,24 @@ fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
         items.extend(gen_nodes(&node.children, context))
     }
 
+    items
+}
+
+fn gen_shared_pattern(node: &Node, context: &mut Context) -> PrintItems {
+    let mut items = PrintItems::new();
+    for n in node.children.iter() {
+        match n.node_type {
+            PatternPlain => {
+                if n.is_surrounded_by(&RoundBracketOpen, &RoundBracketClose) {
+                    // TODO: `shared()` vs. `shared ()`
+                    // ignore forced space after keyword
+                    //let _ = context.gen_expected_space();
+                }
+                items.extend(gen_node(n, context));
+            }
+            _ => items.extend(gen_node(n, context)),
+        }
+    }
     items
 }
 

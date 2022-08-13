@@ -28,6 +28,7 @@ impl<'a> Context<'a> {
 
     pub fn force_space(&mut self) {
         self.force_space = true;
+        self.expect_space = true;
     }
 
     pub fn possible_newline(&mut self) {
