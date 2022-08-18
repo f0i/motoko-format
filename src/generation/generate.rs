@@ -35,8 +35,8 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         Motoko => gen_nodes(&node.children, context),
         Header => gen_nodes(&node.children, context),
         Program => gen_program(&node, context),
-        ImportList => gen_list_body(";", &node.children, context, true, 3),
-        DeclarationList => gen_list_body(";", &node.children, context, true, 3),
+        ImportList => gen_list_body(";", &node.children, context, true, 3, false),
+        DeclarationList => gen_list_body(";", &node.children, context, true, 3, false),
 
         Import => gen_import(&node, context),
         Declaration => gen_nodes(&node.children, context),
@@ -662,7 +662,7 @@ fn gen_list(
         context.expect_space_or_newline();
     }
 
-    let body = gen_list_body(sep, nodes, context, force_multiline, 3);
+    let body = gen_list_body(sep, nodes, context, force_multiline, 3, no_newlines);
     if no_newlines {
         items.extend(body);
     } else {
@@ -688,6 +688,7 @@ fn gen_list_body(
     context: &mut Context,
     force_multiline: bool,
     keep_newlines: usize,
+    omit_final_separator: bool,
 ) -> PrintItems {
     let mut items = MultiLineGroup::new(force_multiline, 0, false, "gen_list_body");
 
@@ -741,7 +742,7 @@ fn gen_list_body(
         }
     }
 
-    if count > 0 {
+    if count > 0 && !omit_final_separator {
         items.if_multiline(sep.to_string().into());
         //items.debug("ø");
         //items.if_multiline_or(sep.to_string().into(), "no-sep".to_string().into())
