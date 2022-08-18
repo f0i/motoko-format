@@ -247,7 +247,7 @@ TypeVariant = {
 }
 
 TypeObj = {
-    "{" ~ /*List*/(TypeField ~ (Semicolon ~ TypeField)* ~ Semicolon?)? ~ "}"
+    CurlyBracketOpen ~ /*List*/(TypeField ~ (Semicolon ~ TypeField)* ~ Semicolon?)? ~ CurlyBracketClose
 }
 
 TypeTag = {
@@ -317,15 +317,15 @@ FuncBody = {
 }
 
 Block = {
-  "{"
+  CurlyBracketOpen
   ~ /*List*/(Declaration ~ (Semicolon ~ Declaration)* ~ Semicolon?)?
-  ~ "}"
+  ~ CurlyBracketClose
 }
 
 ObjBody = {
-  "{"
+  CurlyBracketOpen
   ~ /*List*/(DeclarationField ~ (Semicolon ~ DeclarationField)* ~ Semicolon?)?
-  ~ "}"
+  ~ CurlyBracketClose
 }
 DeclarationField = { Visibility? ~ Stability? ~ Declaration }
 Visibility = { KeywordPrivate | KeywordPublic | KeywordSystem }
@@ -433,13 +433,13 @@ ExpPostFirst = {
   ( RoundBracketOpen ~ ExpPost ~ RoundBracketClose
     | SquareBracketOpen ~ KeywordVar ~ SquareBracketClose // TODO: check if this is possible
     | SquareBracketOpen
-    ~ /*List*/(Var_ExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
+    ~ /*List*/(VarExpNonVar ~ ("," ~ ExpNonVar)* ~ ","?)?
     ~ SquareBracketClose // Arrays
     | ExpNullary
   )
 }
 
-Var_ExpNonVar = {
+VarExpNonVar = {
   KeywordVar? ~ ExpNonVar
 }
 
@@ -472,7 +472,7 @@ ExpNullary = {
 
 // Sample matches "{" Id "}"
 ExpObj = {
-  "{" ~ /*List*/(ExpField ~ (Semicolon ~ ExpField)* ~ Semicolon?)? ~ "}"
+  CurlyBracketOpen ~ /*List*/(ExpField ~ (Semicolon ~ ExpField)* ~ Semicolon?)? ~ CurlyBracketClose
 }
 
 ExpField = {

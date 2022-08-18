@@ -75,7 +75,7 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         Exp | ExpNonVar | ExpPlain | ExpBin | ExpNullary | ExpNest | ExpPost | DeclarationField
         | Type | TypeNoBin | TypeUn | TypePre | TypeItem | ExpBinContinue | ClassBody | Case
-        | DeclarationVar | TypeField | Var_ExpNonVar | Stability | FuncSort => {
+        | DeclarationVar | TypeField | VarExpNonVar | Stability | FuncSort => {
             gen_nodes(&node.children, context)
         }
         Catch => gen_catch(&node, context),
@@ -125,7 +125,15 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         Block | ObjBody | ExpObj | TypeObj => {
             let force_multiline = count_newlines(&node.original) > 0;
-            gen_list("{", ";", "}", &node.children, context, force_multiline, 1)
+            gen_list(
+                "{",
+                ";",
+                "}",
+                &node.children_without_outer(),
+                context,
+                force_multiline,
+                1,
+            )
         }
 
         ExpField => gen_exp_field(node, context),
@@ -150,7 +158,6 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         WHITESPACE | Semicolon | EOI => gen_ignore(&node, context),
 
         Pattern => gen_nodes(&node.children, context),
-
         // TODO: remove to handle all cases
         _ => gen_id_trim(&node, context),
         //_ => gen_debug(&node, context),
@@ -306,7 +313,7 @@ fn gen_id_trim_comment(trim_start: bool, node: &Node, context: &mut Context) -> 
     items
 }
 
-fn gen_id_trim_each(node: &Node, context: &mut Context) -> PrintItems {
+fn _gen_id_trim_each(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     let text = node.original.trim();
     if !text.is_empty() {
@@ -538,7 +545,7 @@ fn gen_pattern_nullary(node: &Node, context: &mut Context) -> PrintItems {
 
     items.extend(context.gen_expected_space());
 
-    if node.is_surrounded_by(&CurlyBracketOpen, &CurlyBracketClose) {
+    if node.is_surrounded_by(&CurlyBracketOpen, &CurlyBracketClose, false) {
         items.extend(gen_list(
             "{",
             ";",
@@ -560,7 +567,7 @@ fn gen_shared_pattern(node: &Node, context: &mut Context) -> PrintItems {
     for n in node.children.iter() {
         match n.node_type {
             PatternPlain => {
-                if n.is_surrounded_by(&RoundBracketOpen, &RoundBracketClose) {
+                if n.is_surrounded_by(&RoundBracketOpen, &RoundBracketClose, false) {
                     // TODO: `shared()` vs. `shared ()`
                     // ignore forced space after keyword
                     //let _ = context.gen_expected_space();
@@ -632,6 +639,12 @@ fn gen_list(
     let mut items = MultiLineGroup::new(force_multiline, 0, false, "gen_list");
 
     let count = count_not_ignored_or_comment(nodes);
+    // no newlines if list is empty or contains a single paranthesized child
+    let no_newlines = count == 0
+        || (count == 1
+            && get_first_not_ignored_or_comment(nodes)
+                .unwrap()
+                .is_parenthesized(true));
 
     items.extend(context.gen_expected_space());
 
@@ -639,20 +652,28 @@ fn gen_list(
     //items.extend(format!(" items: {} ", count).into());
     //items.extend(format!(" multiline: {} ", force_multiline).into());
 
-    items.possible_newline();
+    if !no_newlines {
+        items.possible_newline();
+    }
 
     if count >= space {
         context.expect_space_or_newline();
     }
 
     let body = gen_list_body(sep, nodes, context, force_multiline, 3);
-    items.extend(ir_helpers::with_indent(body));
+    if no_newlines {
+        items.extend(body);
+    } else {
+        items.extend(ir_helpers::with_indent(body));
+    }
 
     if count >= space {
         items.push_signal(Signal::SpaceIfNotTrailing);
     }
 
-    items.possible_newline();
+    if !no_newlines {
+        items.possible_newline();
+    }
     items.push_str(end);
     context.expect_space_or_newline();
 
@@ -941,7 +962,7 @@ fn gen_type_nullary(node: &Node, context: &mut Context) -> PrintItems {
 fn gen_nodes_maybe_perenthesized(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
 
-    if node.is_surrounded_by(&RoundBracketOpen, &RoundBracketClose) {
+    if node.is_surrounded_by(&RoundBracketOpen, &RoundBracketClose, false) {
         // pharentesized
         items.extend(context.gen_expected_space());
         items.extend(gen_list(
@@ -954,7 +975,7 @@ fn gen_nodes_maybe_perenthesized(node: &Node, context: &mut Context) -> PrintIte
             2,
         ));
         context.expect_space_or_newline();
-    } else if node.is_surrounded_by(&SquareBracketOpen, &SquareBracketClose) {
+    } else if node.is_surrounded_by(&SquareBracketOpen, &SquareBracketClose, false) {
         // square brackets
         items.extend(context.gen_expected_space());
         items.extend(gen_list(
@@ -967,7 +988,7 @@ fn gen_nodes_maybe_perenthesized(node: &Node, context: &mut Context) -> PrintIte
             2,
         ));
         context.expect_space_or_newline();
-    } else if node.is_surrounded_by(&AngleBracketOpen, &AngleBracketClose) {
+    } else if node.is_surrounded_by(&AngleBracketOpen, &AngleBracketClose, false) {
         // angle brackets
         items.extend(context.gen_expected_space());
         items.extend(gen_list(
@@ -1051,6 +1072,7 @@ fn gen_(node: &Node, context: &mut Context) -> PrintItems {
 
 */
 
+/*
 fn gen_debug(node: &Node, context: &mut Context) -> PrintItems {
     let mut items = PrintItems::new();
     items.extend(context.gen_expected_space());
@@ -1071,3 +1093,4 @@ fn debug(_name: &str, ir: PrintItems) -> PrintItems {
     items.push_str("·");
     items
 }
+*/

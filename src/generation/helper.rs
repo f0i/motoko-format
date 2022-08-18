@@ -54,6 +54,15 @@ pub fn count_not_ignored_or_comment(nodes: &Vec<Node>) -> usize {
     count
 }
 
+pub fn get_first_not_ignored_or_comment(nodes: &Vec<Node>) -> Option<Node> {
+    for node in nodes {
+        if !is_ignored(node) && !is_whitespace_or_comment(node) {
+            return Some(node.clone());
+        }
+    }
+    None
+}
+
 pub fn gen_spaces(n: usize) -> PrintItems {
     let mut items = PrintItems::new();
     for _ in 0..n {
@@ -88,7 +97,7 @@ pub struct MultiLineGroup {
     indent: u32,
     queue_indent: bool,
     items: PrintItems,
-    info: String,
+    _info: String,
 }
 
 impl MultiLineGroup {
@@ -121,7 +130,7 @@ impl MultiLineGroup {
             indent,
             queue_indent,
             items,
-            info: info.into(),
+            _info: info.into(),
         }
     }
 
@@ -173,9 +182,5 @@ impl MultiLineGroup {
 
     pub fn if_multiline(&mut self, multi: PrintItems) {
         self.if_multiline_or(multi, PrintItems::new());
-    }
-
-    pub fn debug(&mut self, s: &str) {
-        self.extend(format!("~{}~", self.info).into())
     }
 }

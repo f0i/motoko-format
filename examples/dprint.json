@@ -4,7 +4,7 @@
     ],
     "excludes": [
         "motoko/src/prelude/**/*.{mo}",
-        "motoko/doc/schat.mo", // outdated
+        "motoko/doc/schat.mo",
         "motoko/test/fail/**/*.{mo}"
     ],
     "plugins": [

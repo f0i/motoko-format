@@ -11,10 +11,8 @@ actor InvoiceMock {
 actor InvoiceMock {
   func asdf {
     let icp_reciept =
-      await Ledger.transfer(
-        {
-          memo : Nat64 = 0;
-        },
-      );
+      await Ledger.transfer({
+        memo : Nat64 = 0;
+      });
   };
 };

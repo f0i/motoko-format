@@ -1,0 +1,14 @@
+== should format ==
+actor InvoiceMock {
+    let res = await public_key({
+        canister_id = null;
+    });
+};
+
+[expect]
+actor InvoiceMock {
+  let res =
+    await public_key({
+      canister_id = null;
+    });
+};

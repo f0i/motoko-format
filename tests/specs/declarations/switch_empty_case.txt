@@ -9,8 +9,6 @@ actor {
 [expect]
 actor {
   switch state {
-    case (0 or 1) {
-
-    };
+    case (0 or 1) {};
   };
 };

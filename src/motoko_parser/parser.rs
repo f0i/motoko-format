@@ -101,7 +101,7 @@ make_node_types! {
     ExpList,
     ExpNonDec,
     ExpNonVar,
-    Var_ExpNonVar,
+    VarExpNonVar,
     ExpNullary,
     ExpPlain,
     ExpPost,
@@ -293,8 +293,36 @@ impl Node {
         }
     }
 
-    pub fn is_surrounded_by(&self, node_type_pre: &NodeType, node_type_post: &NodeType) -> bool {
-        self.is_first_child(node_type_pre) && self.is_last_child(node_type_post)
+    pub fn is_surrounded_by(
+        &self,
+        node_type_pre: &NodeType,
+        node_type_post: &NodeType,
+        decend: bool,
+    ) -> bool {
+        if self.children.len() == 1 && decend {
+            self.children
+                .first()
+                .unwrap()
+                .is_surrounded_by(node_type_pre, node_type_post, decend)
+        } else {
+            self.is_first_child(node_type_pre) && self.is_last_child(node_type_post)
+        }
+    }
+
+    pub fn is_parenthesized(&self, decend: bool) -> bool {
+        self.is_surrounded_by(
+            &NodeType::RoundBracketOpen,
+            &NodeType::RoundBracketClose,
+            decend,
+        ) || self.is_surrounded_by(
+            &NodeType::CurlyBracketOpen,
+            &NodeType::CurlyBracketClose,
+            decend,
+        ) || self.is_surrounded_by(
+            &NodeType::SquareBracketOpen,
+            &NodeType::SquareBracketClose,
+            decend,
+        )
     }
 
     pub fn children_without_outer(&self) -> Vec<Node> {
@@ -367,6 +395,20 @@ mod test_parsers {
                 panic!("does not contain {:?}", $expected);
             }
         };
+    }
+
+    #[test]
+    fn test_is_parenthesized() {
+        let nodes = match parse_with("{id=null}", Rule::ExpPost) {
+            Ok(nodes) => nodes,
+            Err(err) => {
+                println!("Parsing error:\n{}", err);
+                panic!("Couldn't parse");
+            }
+        };
+        let node = nodes.first().expect("schould contain node, but was empty");
+        println!("----- success ------\n{:?}\n----- end -----", node);
+        assert_eq!(node.is_parenthesized(true), true);
     }
 
     #[test]
