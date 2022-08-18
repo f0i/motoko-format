@@ -1,0 +1,52 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'dprint-plugin-motoko'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=dprint-plugin-motoko"
+                ],
+                "filter": {
+                    "name": "dprint-plugin-motoko",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "initCommands": [
+                "settings set target.disable-aslr false"
+            ]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'test'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=test",
+                    "--package=dprint-plugin-motoko"
+                ],
+                "filter": {
+                    "name": "test",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "initCommands": [
+                "settings set target.disable-aslr false"
+            ]
+        }
+    ]
+}
