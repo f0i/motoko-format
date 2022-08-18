@@ -22,4 +22,4 @@ do
 
 done < "$file"
 
-dprint fmt
+time dprint fmt

@@ -89,7 +89,9 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
         DeclarationNonVar => gen_declaration_non_var(&node, context),
 
         ExpPostContinue | ExpPostList => {
-            context.reset_expect();
+            if !node.starts_with(&Id) {
+                context.reset_expect();
+            }
             gen_nodes_maybe_perenthesized(&node, context)
         }
 
