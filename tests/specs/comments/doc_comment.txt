@@ -1,7 +1,7 @@
 == should format ==
 import i ""; /// doc
-             /// another
+             ///  another
 
 [expect]
 import i "";  /// doc
-/// another
+///  another
