@@ -448,7 +448,8 @@ ExpPostContinue = {
   | SquareBracketOpen ~ Exp ~ SquareBracketClose
   | Dot ~ Nat
   | Dot ~ Id
-  | ExpPostList? ~ ExpNullary
+  | ExpNullary
+  | ExpPostList ~ ExpNullary
   | BANG
 }
 

@@ -6,5 +6,5 @@ asdf
 [expect]
 a.go();
 a.go(1);
-a.go( 1, 2 );
+a.go(1, 2);
 asdf;

@@ -17,6 +17,6 @@ import Quicksort "Quicksort";
 actor Main {
   // Sort an array of integers.
   public query func sort(xs : [Int]) : async [Int] {
-    return Quicksort.sortBy( xs, Int.compare );
+    return Quicksort.sortBy(xs, Int.compare);
   };
 };

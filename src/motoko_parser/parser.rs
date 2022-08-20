@@ -240,7 +240,6 @@ impl Node {
             .collect()
     }
 
-    #[cfg(test)]
     fn get_one_descendant(&self, node_type: &NodeType) -> Option<Node> {
         if self.node_type == *node_type {
             return Some(self.clone());
@@ -260,6 +259,10 @@ impl Node {
             }
         }
         None
+    }
+
+    pub fn has_descendant(&self, node_type: &NodeType) -> bool {
+        self.get_one_descendant(node_type).is_some()
     }
 
     pub fn has_child(&self, node_type: &NodeType) -> bool {

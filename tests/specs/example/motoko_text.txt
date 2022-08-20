@@ -673,35 +673,35 @@ module {
   };
 
   /// Returns the concatenation of `t1` and `t2`, `t1 # t2`.
-  public func concat( t1 : Text, t2 : Text ) : Text =
+  public func concat(t1 : Text, t2 : Text) : Text =
     t1 # t2;
 
   /// Returns `t1 == t2`.
-  public func equal( t1 : Text, t2 : Text ) : Bool { t1 == t2 };
+  public func equal(t1 : Text, t2 : Text) : Bool { t1 == t2 };
 
   /// Returns `t1 != t2`.
-  public func notEqual( t1 : Text, t2 : Text ) : Bool { t1 != t2 };
+  public func notEqual(t1 : Text, t2 : Text) : Bool { t1 != t2 };
 
   /// Returns `t1 < t2`.
-  public func less( t1 : Text, t2 : Text ) : Bool { t1 < t2 };
+  public func less(t1 : Text, t2 : Text) : Bool { t1 < t2 };
 
   /// Returns `t1 <= t2`.
-  public func lessOrEqual( t1 : Text, t2 : Text ) : Bool { t1 <= t2 };
+  public func lessOrEqual(t1 : Text, t2 : Text) : Bool { t1 <= t2 };
 
   /// Returns `t1 > t2`.
-  public func greater( t1 : Text, t2 : Text ) : Bool { t1 > t2 };
+  public func greater(t1 : Text, t2 : Text) : Bool { t1 > t2 };
 
   /// Returns `t1 >= t2`.
-  public func greaterOrEqual( t1 : Text, t2 : Text ) : Bool { t1 >= t2 };
+  public func greaterOrEqual(t1 : Text, t2 : Text) : Bool { t1 >= t2 };
 
   /// Returns the order of `t1` and `t2`.
-  public func compare( t1 : Text, t2 : Text ) : { #less; #equal; #greater } {
-    let c = Prim.textCompare( t1, t2 );
+  public func compare(t1 : Text, t2 : Text) : { #less; #equal; #greater } {
+    let c = Prim.textCompare(t1, t2);
     if (c < 0) #less else if (c == 0) #equal else #greater;
   };
 
 
-  private func extract( t : Text, i : Nat, j : Nat ) : Text {
+  private func extract(t : Text, i : Nat, j : Nat) : Text {
     let size = t.size();
     if (i == 0 and j == size) return t;
     assert (j <= size);
@@ -724,7 +724,7 @@ module {
   };
 
   /// Returns the concatenation of text values in `ts`, separated by `sep`.
-  public func join( sep : Text, ts : Iter.Iter<Text> ) : Text {
+  public func join(sep : Text, ts : Iter.Iter<Text>) : Text {
     var r = "";
     if (sep.size() == 0) {
       for (t in ts) {
@@ -752,7 +752,7 @@ module {
 
 
   /// Returns the result of applying `f` to each character in `ts`, concatenating the intermediate single-character text values.
-  public func map( t : Text, f : Char -> Char ) : Text {
+  public func map(t : Text, f : Char -> Char) : Text {
     var r = "";
     for (c in t.chars()) {
       r #= Prim.charToText(f(c));
@@ -761,7 +761,7 @@ module {
   };
 
   /// Returns the result of applying `f` to each character in `ts`, concatenating the intermediate text values.
-  public func translate( t : Text, f : Char -> Text ) : Text {
+  public func translate(t : Text, f : Char -> Text) : Text {
     var r = "";
     for (c in t.chars()) {
       r #= f(c);
@@ -781,7 +781,7 @@ module {
     #char : Char; #text : Text; #predicate : (Char -> Bool)
   };
 
-  private func take( n : Nat, cs : Iter.Iter<Char> ) : Iter.Iter<Char> {
+  private func take(n : Nat, cs : Iter.Iter<Char>) : Iter.Iter<Char> {
     var i = n;
     object {
       public func next() : ?Char {
@@ -802,7 +802,7 @@ module {
     /// #success on complete match
     #success;
     /// #fail(cs,c) on partial match of cs, but failing match on c
-    #fail : ( cs : Iter.Iter<Char>, c : Char );
+    #fail : (cs : Iter.Iter<Char>, c : Char);
     /// #empty(cs) on partial match of cs and empty stream
     #empty : (cs : Iter.Iter<Char>);
   };
@@ -823,7 +823,7 @@ module {
               if (p == c) {
                 #success;
               } else {
-                #fail( empty(), c );
+                #fail(empty(), c);
               };
             };
             case null { #empty(empty()) };
@@ -837,7 +837,7 @@ module {
               if (p(c)) {
                 #success;
               } else {
-                #fail( empty(), c );
+                #fail(empty(), c);
               };
             };
             case null { #empty(empty()) };
@@ -854,12 +854,12 @@ module {
                 switch (cs.next()) {
                   case (?c) {
                     if (c != d) {
-                      return #fail( take( i, p.chars() ), c );
+                      return #fail(take(i, p.chars()), c);
                     };
                     i += 1;
                   };
                   case null {
-                    return #empty(take( i, p.chars() ));
+                    return #empty(take(i, p.chars()));
                   };
                 };
               };
@@ -872,15 +872,15 @@ module {
   };
 
   private class CharBuffer(cs : Iter.Iter<Char>) : Iter.Iter<Char> = {
-    var stack : Stack.Stack<( Iter.Iter<Char>, Char )> = Stack.Stack();
+    var stack : Stack.Stack<(Iter.Iter<Char>, Char)> = Stack.Stack();
 
-    public func pushBack( cs0 : Iter.Iter<Char>, c : Char ) {
-      stack.push(( cs0, c ));
+    public func pushBack(cs0 : Iter.Iter<Char>, c : Char) {
+      stack.push((cs0, c));
     };
 
     public func next() : ?Char {
       switch (stack.peek()) {
-        case (?( buff, c )) {
+        case (?(buff, c)) {
           switch (buff.next()) {
             case null {
               ignore stack.pop();
@@ -901,7 +901,7 @@ module {
   /// Returns the sequence of fields in `t`, derived from start to end,
   /// separated by text matching pattern `p`.
   /// Two fields are separated by exactly one match.
-  public func split( t : Text, p : Pattern ) : Iter.Iter<Text> {
+  public func split(t : Text, p : Pattern) : Iter.Iter<Text> {
     let match = matchOfPattern(p);
     let cs = CharBuffer(t.chars());
     var state = 0;
@@ -931,8 +931,8 @@ module {
                   state := 2;
                   return r;
                 };
-                case (#fail( cs1, c )) {
-                  cs.pushBack( cs1, c );
+                case (#fail(cs1, c)) {
+                  cs.pushBack(cs1, c);
                   switch (cs.next()) {
                     case (?ci) {
                       field #= fromChar(ci);
@@ -961,8 +961,8 @@ module {
   /// Returns the sequence of tokens in `t`, derived from start to end.
   /// A _token_ is a non-empty maximal subsequence of `t` not containing a match for pattern `p`.
   /// Two tokens may be separated by one or more matches of `p`.
-  public func tokens( t : Text, p : Pattern ) : Iter.Iter<Text> {
-    let fs = split( t, p );
+  public func tokens(t : Text, p : Pattern) : Iter.Iter<Text> {
+    let fs = split(t, p);
     object {
       public func next() : ?Text {
         switch (fs.next()) {
@@ -974,7 +974,7 @@ module {
   };
 
   /// Returns true if `t` contains a match for pattern `p`.
-  public func contains( t : Text, p : Pattern ) : Bool {
+  public func contains(t : Text, p : Pattern) : Bool {
     let match = matchOfPattern(p);
     let cs = CharBuffer(t.chars());
     loop {
@@ -985,8 +985,8 @@ module {
         case (#empty(cs1)) {
           return false;
         };
-        case (#fail( cs1, c )) {
-          cs.pushBack( cs1, c );
+        case (#fail(cs1, c)) {
+          cs.pushBack(cs1, c);
           switch (cs.next()) {
             case null {
               return false;
@@ -999,7 +999,7 @@ module {
   };
 
   /// Returns `true` if `t` starts with a prefix matching pattern `p`, otherwise returns `false`.
-  public func startsWith( t : Text, p : Pattern ) : Bool {
+  public func startsWith(t : Text, p : Pattern) : Bool {
     var cs = t.chars();
     let match = matchOfPattern(p);
     switch (match(cs)) {
@@ -1009,7 +1009,7 @@ module {
   };
 
   /// Returns `true` if `t` ends with a suffix matching pattern `p`, otherwise returns `false`.
-  public func endsWith( t : Text, p : Pattern ) : Bool {
+  public func endsWith(t : Text, p : Pattern) : Bool {
     let s2 = sizeOfPattern(p);
     if (s2 == 0) return true;
     let s1 = t.size();
@@ -1028,7 +1028,7 @@ module {
   };
 
   /// Returns `t` with all matches of pattern `p` replaced by text `r`.
-  public func replace( t : Text, p : Pattern, r : Text ) : Text {
+  public func replace(t : Text, p : Pattern, r : Text) : Text {
     let match = matchOfPattern(p);
     let size = sizeOfPattern(p);
     let cs = CharBuffer(t.chars());
@@ -1048,8 +1048,8 @@ module {
           };
           break l;
         };
-        case (#fail( cs1, c )) {
-          cs.pushBack( cs1, c );
+        case (#fail(cs1, c)) {
+          cs.pushBack(cs1, c);
         };
       };
       switch (cs.next()) {
@@ -1066,7 +1066,7 @@ module {
 
 
   /// Returns the optioned suffix of `t` obtained by eliding exactly one leading match of pattern `p`, otherwise `null`.
-  public func stripStart( t : Text, p : Pattern ) : ?Text {
+  public func stripStart(t : Text, p : Pattern) : ?Text {
     let s = sizeOfPattern(p);
     if (s == 0) return ?t;
     var cs = t.chars();
@@ -1078,7 +1078,7 @@ module {
   };
 
   /// Returns the optioned prefix of `t` obtained by eliding exactly one trailing match of pattern `p`, otherwise `null`.
-  public func stripEnd( t : Text, p : Pattern ) : ?Text {
+  public func stripEnd(t : Text, p : Pattern) : ?Text {
     let s2 = sizeOfPattern(p);
     if (s2 == 0) return ?t;
     let s1 = t.size();
@@ -1091,13 +1091,13 @@ module {
       diff -= 1;
     };
     switch (match(cs1)) {
-      case (#success) return ?extract( t, 0, s1 - s2 );
+      case (#success) return ?extract(t, 0, s1 - s2);
       case _ return null;
     };
   };
 
   /// Returns the suffix of `t` obtained by eliding all leading matches of pattern `p`.
-  public func trimStart( t : Text, p : Pattern ) : Text {
+  public func trimStart(t : Text, p : Pattern) : Text {
     let cs = t.chars();
     let size = sizeOfPattern(p);
     if (size == 0) return t;
@@ -1115,7 +1115,7 @@ module {
               fromIter(cs1);
             };
         };
-        case (#fail( cs1, c )) {
+        case (#fail(cs1, c)) {
           return if (matchSize == 0) {
               t;
             } else {
@@ -1127,7 +1127,7 @@ module {
   };
 
   /// Returns the prefix of `t` obtained by eliding all trailing matches of pattern `p`.
-  public func trimEnd( t : Text, p : Pattern ) : Text {
+  public func trimEnd(t : Text, p : Pattern) : Text {
     let cs = CharBuffer(t.chars());
     let size = sizeOfPattern(p);
     if (size == 0) return t;
@@ -1145,18 +1145,18 @@ module {
             case (?_) return t;
           };
         };
-        case (#fail( cs1, c )) {
+        case (#fail(cs1, c)) {
           matchSize := 0;
-          cs.pushBack( cs1, c );
+          cs.pushBack(cs1, c);
           ignore cs.next();
         };
       };
     };
-    extract( t, 0, t.size() - matchSize );
+    extract(t, 0, t.size() - matchSize);
   };
 
   /// Returns the subtext of `t` obtained by eliding all leading and trailing matches of pattern `p`.
-  public func trim( t : Text, p : Pattern ) : Text {
+  public func trim(t : Text, p : Pattern) : Text {
     let cs = t.chars();
     let size = sizeOfPattern(p);
     if (size == 0) return t;
@@ -1170,10 +1170,10 @@ module {
         case (#empty(cs1)) {
           return if (matchSize == 0) { t } else { fromIter(cs1) };
         };
-        case (#fail( cs1, c )) {
+        case (#fail(cs1, c)) {
           let start = matchSize;
           let cs2 = CharBuffer(cs);
-          cs2.pushBack( cs1, c );
+          cs2.pushBack(cs1, c);
           ignore cs2.next();
           matchSize := 0;
           label l
@@ -1188,14 +1188,14 @@ module {
                   case (?_) return t;
                 };
               };
-              case (#fail( cs3, c1 )) {
+              case (#fail(cs3, c1)) {
                 matchSize := 0;
-                cs2.pushBack( cs3, c1 );
+                cs2.pushBack(cs3, c1);
                 ignore cs2.next();
               };
             };
           };
-          return extract( t, start, t.size() - matchSize - start );
+          return extract(t, start, t.size() - matchSize - start);
         };
       };
     };
@@ -1205,17 +1205,17 @@ module {
   public func compareWith(
       t1 : Text,
       t2 : Text,
-      cmp : ( Char, Char ) -> { #less; #equal; #greater }
+      cmp : (Char, Char) -> { #less; #equal; #greater }
     ) : { #less; #equal; #greater } {
     let cs1 = t1.chars();
     let cs2 = t2.chars();
     loop {
-      switch ( cs1.next(), cs2.next() ) {
-        case ( null, null ) { return #equal };
-        case ( null, ?_ ) { return #less };
-        case ( ?_, null ) { return #greater };
-        case ( ?c1, ?c2 ) {
-          switch (cmp( c1, c2 )) {
+      switch (cs1.next(), cs2.next()) {
+        case (null, null) { return #equal };
+        case (null, ?_) { return #less };
+        case (?_, null) { return #greater };
+        case (?c1, ?c2) {
+          switch (cmp(c1, c2)) {
             case (#equal) {};  // continue
             case other { return other };
           };
