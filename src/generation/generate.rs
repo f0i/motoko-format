@@ -397,7 +397,6 @@ fn gen_keyword(node: &Node, context: &mut Context) -> PrintItems {
     items.extend(context.gen_expected_space());
 
     items.extend(gen_id_trim(node, context));
-    context.expect_space();
     context.force_space();
     items
 }
@@ -695,8 +694,7 @@ fn gen_list(
     }
 
     if count >= space {
-        context.expect_space_or_newline();
-        context.force_space();
+        context.force_space_or_newline();
     }
 
     let body = gen_list_body(sep, nodes, context, force_multiline, 3, no_newlines);
@@ -745,7 +743,7 @@ fn gen_list_body(
         } else if is_comment(n) {
             if need_separator {
                 items.push_str(sep);
-                context.expect_space_or_newline();
+                context.force_space_or_newline();
                 need_separator = false;
             }
             if allow_newlines {
@@ -757,7 +755,7 @@ fn gen_list_body(
         } else {
             if need_separator {
                 items.push_str(sep);
-                context.expect_space_or_newline();
+                context.force_space_or_newline();
             }
             if allow_newlines {
                 if lines > 0 {
@@ -886,8 +884,7 @@ fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
                 // TODO: generalize or refactor
                 items.push_signal(Signal::SpaceOrNewLine);
                 items.push_str(":=");
-                context.expect_space_or_newline();
-                context.force_space();
+                context.force_space_or_newline();
             }
             Exp => {
                 if indent && n.starts_with(&CurlyBracketOpen) {

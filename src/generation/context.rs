@@ -40,6 +40,11 @@ impl<'a> Context<'a> {
         self.possible_newline();
     }
 
+    pub fn force_space_or_newline(&mut self) {
+        self.force_space();
+        self.possible_newline();
+    }
+
     pub fn gen_expected_space(&mut self) -> PrintItems {
         let mut items = PrintItems::new();
         if !self.mode_no_space {
