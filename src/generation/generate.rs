@@ -665,14 +665,14 @@ fn gen_list(
     context: &mut Context,
     force_multiline: bool,
     can_condense: bool,
-    // spaces or newlines will be added after `start` and brefor `end`
+    // spaces or newlines will be added after `start` and before `end`
     // if at least `space` not_ignored nodes are in `nodes`
     space: usize,
 ) -> PrintItems {
     let mut items = MultiLineGroup::new(force_multiline, 0, false, "gen_list");
 
     let count = count_not_ignored_or_comment(nodes);
-    // no newlines if list is empty or contains a single paranthesized child
+    // no newlines if list is empty or contains a single parenthesized child
     let no_newlines = count == 0
         || (can_condense
             && (count == 1
@@ -686,7 +686,7 @@ fn gen_list(
 
     //if count > 0 {
     //    items.extend(format!(" items: {} ", count).into());
-    //    items.extend(format!(" no_nelines: {} ", no_newlines).into());
+    //    items.extend(format!(" no_newlines: {} ", no_newlines).into());
     //    items.extend(format!(" multiline: {} ", force_multiline).into());
     //}
 
@@ -696,6 +696,7 @@ fn gen_list(
 
     if count >= space {
         context.expect_space_or_newline();
+        context.force_space();
     }
 
     let body = gen_list_body(sep, nodes, context, force_multiline, 3, no_newlines);
@@ -733,13 +734,14 @@ fn gen_list_body(
     let mut index = 0; // current generated node index
     let mut counter = 0; // count not_ignored nodes that have been printed
     let mut lines = 0;
-    let mut allow_newlines = false; // allow newlines after comments or statments
+    let mut allow_newlines = false; // allow newlines after comments or statements
 
     for (i, n) in nodes.iter().enumerate() {
         index = i;
         if is_whitespace(n) {
             lines = count_newlines(&n.original).clamp(0, keep_newlines);
         } else if is_ignored(n) {
+            // ignored
         } else if is_comment(n) {
             if need_separator {
                 items.push_str(sep);
@@ -780,8 +782,6 @@ fn gen_list_body(
 
     if count > 0 && !omit_final_separator {
         items.if_multiline(sep.to_string().into());
-        //items.debug("ø");
-        //items.if_multiline_or(sep.to_string().into(), "no-sep".to_string().into())
     }
 
     let mut lines = 0;

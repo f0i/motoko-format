@@ -1,0 +1,17 @@
+== (Xskip) should format ==
+actor StableLog {
+    public query func readLast(count : Nat) : async [Text] {
+        while (k < count and offset < 0) {
+        };
+        while (k < count and offset > 0) {
+        }
+    }
+}
+
+[expect]
+actor StableLog {
+  public query func readLast(count : Nat) : async [Text] {
+    while (k < count and offset < 0) {};
+    while (k < count and offset > 0) {};
+  };
+};

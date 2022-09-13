@@ -1,0 +1,16 @@
+== should format ==
+module {
+  public func partition() {
+    switch l {
+      case null { (null, null) };
+    }
+  }
+}
+[expect]
+module {
+  public func partition() {
+    switch l {
+      case null { (null, null) };
+    };
+  };
+};
