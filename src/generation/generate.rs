@@ -90,15 +90,14 @@ fn gen_node<'a>(node: &Node, context: &mut Context) -> PrintItems {
 
         DeclarationNonVar => gen_declaration_non_var(&node, context),
 
-        ExpPostContinue
-            if node.has_descendant(&ExpPostList)
-                && (node.original.contains(" <") || node.original.contains(" >")) =>
-        {
-            // TODO!: BinOp / RelOp can get miss parsed as a ExpPostList
-            // This is a bug in the parser caused by it's
-            gen_unformatted(node, context)
-        }
-
+        //ExpPostContinue
+        //    if node.has_descendant(&ExpPostList)
+        //        && (node.original.contains(" <") || node.original.contains(" >")) =>
+        //{
+        //    // TODO!: BinOp / RelOp can get miss parsed as a ExpPostList
+        //    // This is a bug in the parser caused by it's
+        //    gen_unformatted(node, context)
+        //}
         ExpPostContinue | ExpPostList => {
             if !node.starts_with(&Id) {
                 context.reset_expect();
@@ -880,11 +879,11 @@ fn gen_exp_non_dec(node: &Node, context: &mut Context) -> PrintItems {
                     indent = true;
                 }
             }
-            ColonEqual => {
-                // TODO: generalize or refactor
-                items.push_signal(Signal::SpaceOrNewLine);
-                items.push_str(":=");
+            ColonEqual | BinAssign => {
+                items.extend(gen_id(n, context));
                 context.force_space_or_newline();
+                items.push_signal(Signal::StartIndent);
+                indent = true;
             }
             Exp => {
                 if indent && n.starts_with(&CurlyBracketOpen) {

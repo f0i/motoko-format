@@ -1,0 +1,9 @@
+== should format ==
+module {
+crc := crc32Table[Nat32.toNat(crc ^ Nat32.fromNat(Nat8.toNat(b)) & 0xff)] ^ (crc >> 8);
+}
+[expect]
+module {
+  crc := crc32Table[Nat32.toNat(crc ^ Nat32.fromNat(Nat8.toNat(b)) & 0xff)]
+    ^ (crc >> 8);
+};

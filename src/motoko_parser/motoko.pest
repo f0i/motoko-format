@@ -45,7 +45,7 @@ SpacedComment = ${ WHITESPACE? ~ Comment }
 DocComment = ${
   (
     (
-      ("/// " | "//! ") ~ DocCommentContent | "///"
+      ("/// " | "//! ") ~ DocCommentContent | ("///" | "//!")
     ) ~ EOL
   )+
 }
