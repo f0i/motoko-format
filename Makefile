@@ -17,5 +17,8 @@ release: build
 	mkdir -p release
 	cp target/wasm32-unknown-unknown/release/dprint_plugin_motoko.wasm ./release/
 
-test-release: release
+test-external: release
 	cd examples && ./test-external-repos.sh
+
+reveiw-external: release
+	cd examples && ./review-external-repos.sh
