@@ -956,7 +956,7 @@ fn gen_if_statement(node: &Node, context: &mut Context) -> PrintItems {
     for n in node.children.iter() {
         match n.node_type {
             ExpNest => {
-                if n.has_child(&Block) {
+                if n.has_child(&Block) || n.starts_with(&KeywordIf) {
                     items.extend(gen_node(&n, context))
                 } else {
                     items.extend(ir_helpers::with_indent(gen_node(&n, context)))

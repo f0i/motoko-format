@@ -1,6 +1,6 @@
 == (skip) should format ==
 actor InvoiceMock {
-    let res = await ecdsa_canister_actor.ecdsa_public_key({
+    let res = await ecdsa_public_key({
         canister_id = null;
     });
 };

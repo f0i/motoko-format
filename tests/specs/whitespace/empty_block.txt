@@ -1,0 +1,6 @@
+== should format ==
+module {
+}
+
+[expect]
+module {};

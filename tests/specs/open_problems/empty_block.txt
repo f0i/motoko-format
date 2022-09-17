@@ -1,7 +1,0 @@
-== (skip) should format ==
-module {
-}
-
-[expect]
-module {
-};
