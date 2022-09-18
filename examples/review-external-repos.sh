@@ -20,5 +20,3 @@ do
     fi
 
 done < "$file"
-
-time dprint fmt

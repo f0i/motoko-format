@@ -28,7 +28,7 @@ import b "x.mo"  // comment before semicolon
    with spaces */
 /*  */
 /*
- */
+*/
 
 import i "x.mo";
 /* block */

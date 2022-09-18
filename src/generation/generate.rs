@@ -449,7 +449,7 @@ fn gen_comment_block(node: &Node, context: &mut Context) -> PrintItems {
             _ => items.extend(gen_node(n, context)),
         }
     }
-    items.push_signal(Signal::SpaceIfNotTrailing);
+    items.extend(if_not_start_of_line(Signal::SpaceIfNotTrailing.into()));
     items.push_str("*/");
     context.expect_space();
     items.push_signal(Signal::FinishIgnoringIndent);
