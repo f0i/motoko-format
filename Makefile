@@ -22,3 +22,9 @@ test-external: release
 
 reveiw-external: release
 	cd examples && ./review-external-repos.sh
+
+npm-publish: release
+	npm install
+	node setup.js 0.0.1
+	npm run test
+	npm publish --access public

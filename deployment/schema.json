@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://TODO.tbd/dprint-plugin-motoko/0.0.0/schema.json",
+  "type": "object",
+  "definitions": {
+    "newLineKind": {
+      "description": "The kind of newline to use.",
+      "type": "string",
+      "default": "lf",
+      "oneOf": [
+        {
+          "const": "auto",
+          "description": "For each file, uses the newline kind found at the end of the last line."
+        },
+        {
+          "const": "crlf",
+          "description": "Uses carriage return, line feed."
+        },
+        {
+          "const": "lf",
+          "description": "Uses line feed."
+        },
+        {
+          "const": "system",
+          "description": "Uses the system standard (ex. crlf on Windows)."
+        }
+      ]
+    }
+  },
+  "properties": {
+    "locked": {
+      "description": "Whether the configuration is not allowed to be overriden or extended.",
+      "type": "boolean"
+    },
+    "lineWidth": {
+      "description": "The width of a line the printer will try to stay under. Note that the printer may exceed this width in certain cases.",
+      "default": 99,
+      "type": "number"
+    },
+    "newLineKind": {
+      "$ref": "#/definitions/newLineKind"
+    },
+    "ignoreDirective": {
+      "description": "The text to use for an ignore directive (ex. `/* formatter-ignore */`).",
+      "default": "formatter-ignore",
+      "type": "string"
+    },
+    "ignoreFileDirective": {
+      "description": "The text to use for an ignore file directive (ex. `<!-- dprint-ignore-file -->`).",
+      "default": "dprint-ignore-file",
+      "type": "string"
+    },
+    "ignoreStartDirective": {
+      "description": "The text to use for an ignore start directive (ex. `<!-- dprint-ignore-start -->`).",
+      "default": "dprint-ignore-start",
+      "type": "string"
+    },
+    "ignoreEndDirective": {
+      "description": "The text to use for an ignore end directive (ex. `<!-- dprint-ignore-end -->`).",
+      "default": "dprint-ignore-end",
+      "type": "string"
+    }
+  }
+}

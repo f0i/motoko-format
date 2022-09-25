@@ -18,3 +18,9 @@ release:
   artifacts:
     paths:
       - release
+
+npm:
+  image: "node:latest"
+  script:
+    - make npm-publish
+  

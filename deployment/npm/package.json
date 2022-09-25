@@ -1,0 +1,29 @@
+{
+  "name": "@f0i/dprint-motoko",
+  "version": "0.0.1",
+  "description": "Wasm buffer for dprint-plugin-motoko.",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f0i/motoko-format.git"
+  },
+  "keywords": [
+    "motoko",
+    "code",
+    "formatter",
+    "dprint"
+  ],
+  "author": "Martin Sigloch",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/f0i/motoko-format/issues"
+  },
+  "homepage": "https://github.com/f0i/motoko-format#readme",
+  "scripts": {
+    "test": "node index.test.js"
+  },
+  "devDependencies": {
+    "@dprint/formatter": "~0.1.4"
+  }
+}

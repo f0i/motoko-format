@@ -4,7 +4,7 @@ A code formatter for the Motoko programming language.
 
 ## :warning: Risks and Disclaimer
 
-This formatter is in early development!
+This formatter is in development!
 
 > None of this is coding advice.
 > Programs are risky; so are formatters.
@@ -13,7 +13,41 @@ This formatter is in early development!
 > It's not for everyone, but we're glad you're with us.
 > [¹](http://podcast.banklesshq.com/)
 
-## Installation
+## VS Code Extension
+
+The Visual Studio Code plugin is available through the marketplace as [`motoko-format`](https://marketplace.visualstudio.com/items?itemName=f0i.motoko-format).
+
+This will add the motoko formatter.
+Use the `> Format Document` command to run it.
+
+![`> Format Document`](docs/format_document.png)
+
+On the first run, it might ask which formatter to use, select `f0i.motoko-format`.
+
+![`f0i.motoko-format`](docs/select_formatter.png)
+
+It is also recommended to install the [Motoko language support](https://marketplace.visualstudio.com/items?itemName=dfinity-foundation.vscode-motoko) extension.
+This will provide additional features such as syntax highlighting.
+
+### Optional: Format on save
+
+- Run the VS Code command (_View_ » _Command Palette_) `> Preferences:` **`Open Settings (JSON)`**.
+- Add the following section for motoko inside the `settings.json`:
+
+```json
+{
+    /* other settings */
+    "[motoko]": {
+        "editor.defaultFormatter": "f0i.motoko-format",
+        "editor.formatOnSave": true,
+    },
+    /* other settings */
+}
+```
+
+Now `.mo` files should get automatically formatted whenever you save them.
+
+## Installation as CLI
 
 The current version can be used as a plugin for [dprint](https://dprint.dev/).
 
@@ -55,30 +89,7 @@ If everything is working so far, you should be able to format a file with this c
 dprint fmt -- path/to/file.mo
 ```
 
-### VS Code Extension
-
-The Visual Studio Code plugin currently requires dprint to be installed on your system.
-
-- Follow the steps above to install and configure dprint.
-- In VS Code, search in _Extensions_ for "**dprint**" and install the "[Dprint Code Formatter](https://marketplace.visualstudio.com/items?itemName=dprint.dprint)".
-- You should also install the [Motoko language support](https://marketplace.visualstudio.com/items?itemName=dfinity-foundation.vscode-motoko) extension.
-- Run the VS Code command (_View_ » _Command Palette_) `> Preferences:` **`Open Settings (JSON)`**.
-- Add the following section for motoko inside the settings.json:
-
-```json
-{
-    /* other settings */
-    "[motoko]": {
-        "editor.defaultFormatter": "dprint.dprint",
-        "editor.formatOnSave": true,
-    },
-    /* other settings */
-}
-```
-
-Now `.mo` files should get automatically formatted whenever you save them.
-
-## Update
+### Update
 
 **Run `dprint clear-cache` in a terminal**.
 
