@@ -2,20 +2,16 @@
 
 A code formatter for the Motoko programming language.
 
-## :warning: Risks and Disclaimer
+## :warning: Deprecated
 
-This formatter is in development!
+Dfinity made a more complete and better maintained version of this in typescript.
 
-> None of this is coding advice.
-> Programs are risky; so are formatters.
-> **You could definitely lose what you put in.**
-> But we are headed west! This is the frontier.
-> It's not for everyone, but we're glad you're with us.
-> [¹](http://podcast.banklesshq.com/)
+Please use https://github.com/dfinity/prettier-plugin-motoko
+or, for VS Code the [Motoko extension](https://marketplace.visualstudio.com/items?itemName=dfinity-foundation.vscode-motoko).
 
 ## VS Code Extension
 
-The Visual Studio Code plugin is available through the marketplace as [`motoko-format`](https://marketplace.visualstudio.com/items?itemName=f0i.motoko-format).
+The Visual Studio Code plugin is available through the marketplace as [`motoko-format`](https://marketplace.visualstudio.com/items?itemName=f0i.motoko-format) (unpublished, see https://gitlab.com/f0i/motoko-format-vscode for source!).
 
 This will add the motoko formatter.
 Use the `> Format Document` command to run it.
